@@ -1,0 +1,38 @@
+schema_version: "1.0"
+fixture_id: railflux-tatkal-v1
+description: Deterministic academic railway fixture; no real user or booking data.
+seeds:
+  data: 928371
+  requests: 772910
+  payment_sequence: 481516
+entities:
+  users: 5000
+  stations: 50
+  trains: 100
+  train_runs: 100
+  classes: [SL, 3A, 2A]
+  quota: TATKAL
+profiles:
+  contention:
+    hot_train_runs: 10
+    seats_per_hot_bucket: 100
+    offered_booking_attempts: 5000
+  non_contention:
+    train_runs: 100
+    seats_per_bucket: 500
+    offered_booking_attempts: 5000
+payment_stub:
+  base_delay_ms: 100
+  jitter_ms: 25
+  failure_rate: 0.02
+reset_expectations:
+  bookings: 0
+  successful_payments: 0
+  booking_idempotency_records: 0
+  outbox_events: 0
+  processed_events: 0
+  queue_visible: 0
+  dlq_visible: 0
+checksums:
+  schema_sha256: TO_BE_GENERATED
+  fixture_sha256: TO_BE_GENERATED

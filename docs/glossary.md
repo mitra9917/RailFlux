@@ -1,0 +1,25 @@
+# Glossary
+
+- **Baseline:** RailFlux’s synthetic fixed-capacity monolith, not the real IRCTC system.
+- **Optimized system:** Read/write-separated, cached, queued, independently scalable RailFlux deployment.
+- **Offered load:** Work scheduled by the generator, including work the generator or system could not start.
+- **Open model:** Arrivals are scheduled independently of response time.
+- **Closed model:** A fixed user population waits for responses before issuing later work.
+- **Dropped iteration:** A scheduled k6 iteration that lacked an available virtual user; counted as unmet demand.
+- **Terminal latency:** Time from booking submission until `CONFIRMED`, `SOLD_OUT`, or `FAILED`.
+- **SLO-compliant capacity:** Highest offered rate satisfying latency, technical-error, dropped-arrival, and correctness limits.
+- **Contention fixture:** Demand exceeds inventory and many users target the same inventory rows.
+- **Non-contention fixture:** Inventory exceeds demand, exposing raw throughput without sellout pressure.
+- **Idempotency key:** Client-generated key ensuring retries return one logical booking result.
+- **Authoritative availability:** Inventory checked inside the primary-database booking transaction.
+- **Displayed availability:** Potentially stale read optimized for user guidance; never used to commit a booking.
+- **Cache-aside:** Application reads cache first, loads from a database on miss, then populates cache.
+- **DLQ:** Dead-letter queue for messages that repeatedly fail processing.
+- **Paired run:** Baseline and optimized runs sharing the same fixture, seed, and experiment cell.
+- **Run manifest:** Immutable configuration and provenance for one experiment run.
+- **Fixture checksum:** Hash proving the initial data state used by a run.
+- **Coordinated omission:** Under-reporting overload latency because a closed generator slows when the target slows.
+- **Resource parity:** Systems have equal maximum application/database resources; auxiliary costs are disclosed.
+- **Cost parity:** Total hourly architecture cost is held within the preregistered tolerance.
+- **RPS:** Requests per second, always qualified as offered, started, completed, or successful.
+- **PNR:** A simulated confirmation identifier in RailFlux, never a real railway PNR.

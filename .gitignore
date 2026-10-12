@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.idea/
+.vscode/
+*.swp
+experiment/runs/*.json
+!experiment/runs/.gitkeep
+load-tests/results/*
+!load-tests/results/.gitkeep

@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: RailFlux API
+  version: 1.0.0-planning
+  description: Synthetic railway booking contract shared by baseline and optimized profiles.
+servers:
+  - url: https://example.invalid/api
+paths:
+  /v1/search:
+    get:
+      operationId: searchTrains
+      security: [{syntheticJwt: []}]
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, pattern: "^[A-Z]{2,5}$"}}
+        - {name: to, in: query, required: true, schema: {type: string, pattern: "^[A-Z]{2,5}$"}}
+        - {name: date, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        "200":
+          description: Matching train runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, freshness]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/TrainRun"}}
+                  freshness: {$ref: "#/components/schemas/Freshness"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+  /v1/availability:
+    get:
+      operationId: getAvailability
+      security: [{syntheticJwt: []}]
+      parameters:
+        - {name: trainRunId, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: class, in: query, required: true, schema: {type: string}}
+        - {name: quota, in: query, required: true, schema: {type: string, default: TATKAL}}
+      responses:
+        "200":
+          description: Advisory displayed availability
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Availability"}
+  /v1/bookings:
+    post:
+      operationId: createBooking
+      security: [{syntheticJwt: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, minLength: 16, maxLength: 128}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateBooking"}
+      responses:
+        "200":
+          description: Idempotent replay of an existing terminal result
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BookingResult"}
+        "201":
+          description: Booking confirmed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BookingResult"}
+        "409":
+          description: Sold out or idempotency conflict
+        "425":
+          description: An identical idempotent request is still processing; retry status with backoff
+        "422":
+          description: Payment or business-rule failure
+        "429":
+          description: Admission limit reached
+  /v1/bookings/{bookingId}:
+    get:
+      operationId: getBooking
+      security: [{syntheticJwt: []}]
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        "200":
+          description: Terminal or in-progress booking state
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BookingResult"}
+        "404":
+          description: Booking not found
+  /health/live:
+    get:
+      operationId: liveness
+      responses:
+        "200": {description: Process is alive}
+  /health/ready:
+    get:
+      operationId: readiness
+      responses:
+        "200": {description: Required dependencies are ready}
+        "503": {description: Not ready}
+components:
+  securitySchemes:
+    syntheticJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Locally issued synthetic identity token; never a real IRCTC credential.
+  responses:
+    BadRequest:
+      description: Invalid input
+  schemas:
+    TrainRun:
+      type: object
+      required: [trainRunId, trainNo, name, date]
+      properties:
+        trainRunId: {type: string, format: uuid}
+        trainNo: {type: string}
+        name: {type: string}
+        date: {type: string, format: date}
+    Freshness:
+      type: object
+      required: [observedAt, authoritative]
+      properties:
+        observedAt: {type: string, format: date-time}
+        authoritative: {type: boolean, const: false}
+        cacheStatus: {type: string, enum: [HIT, MISS, BYPASS]}
+    Availability:
+      type: object
+      required: [trainRunId, class, quota, displayedSeats, freshness]
+      properties:
+        trainRunId: {type: string, format: uuid}
+        class: {type: string}
+        quota: {type: string}
+        displayedSeats: {type: integer, minimum: 0}
+        freshness: {$ref: "#/components/schemas/Freshness"}
+    Passenger:
+      type: object
+      required: [syntheticName, age]
+      properties:
+        syntheticName: {type: string, maxLength: 80}
+        age: {type: integer, minimum: 1, maximum: 120}
+    CreateBooking:
+      type: object
+      required: [userId, inventoryId, passengers, paymentToken]
+      properties:
+        userId: {type: string, format: uuid}
+        inventoryId: {type: string, format: uuid}
+        passengers:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: {$ref: "#/components/schemas/Passenger"}
+        paymentToken: {type: string, description: Synthetic token only}
+    BookingResult:
+      type: object
+      required: [bookingId, status]
+      properties:
+        bookingId: {type: string, format: uuid}
+        simulatedPnr: {type: [string, "null"]}
+        status: {type: string, enum: [RECEIVED, PAYMENT_PENDING, CONFIRMED, SOLD_OUT, FAILED]}
+        errorCode: {type: [string, "null"]}

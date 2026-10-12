@@ -1,0 +1,46 @@
+schema_version: "1.0"
+status: preregistered-draft
+freeze_after_calibration: true
+primary_endpoint:
+  name: slo_compliant_offered_booking_rate
+  criteria:
+    terminal_latency_p99_ms_max: 2000
+    technical_error_rate_max: 0.01
+    dropped_arrival_rate_max: 0.001
+    correctness_required: true
+hypotheses:
+  - id: H1
+    statement: Optimized architecture increases SLO-compliant offered booking capacity by at least 25 percent at cost parity.
+    metric: slo_compliant_offered_booking_rate
+    minimum_effect_ratio: 1.25
+    primary: true
+  - id: H2
+    statement: Optimized p99 terminal latency is at most 75 percent of baseline at the common 80 percent load.
+    metric: terminal_booking_latency_p99_ms
+    maximum_effect_ratio: 0.75
+  - id: H3
+    statement: Neither architecture oversells inventory or duplicates a successful payment.
+    metrics:
+      oversell_count: 0
+      duplicate_successful_payment_count: 0
+  - id: H4
+    statement: Optimized architecture improves legitimate-user success under bot-like traffic without reducing legitimate-only success by more than 5 percentage points.
+    metric: legitimate_terminal_success_rate
+    bot_mix_minimum_effect_ratio: 1.05
+    non_inferiority_margin: 0.05
+  - id: H5
+    statement: Warm cache reduces read pressure without changing booking correctness.
+    design: optimized_only_cold_vs_warm_repeated_comparison
+    metrics:
+      rds_read_queries: lower
+      correctness: equal
+  - id: H6
+    statement: Optimized architecture restores SLO compliance faster after a single-component failure.
+    metric: recovery_time_seconds
+analysis:
+  unit: complete_run
+  paired: true
+  repetitions_per_cell: 5
+  effect: log_ratio_optimized_over_baseline
+  interval: paired_bootstrap_95_percent
+  secondary_multiplicity: holm

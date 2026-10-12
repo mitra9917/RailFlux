@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://railflux.invalid/schemas/result.schema.json",
+  "title": "RailFlux Experiment Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "pair_id",
+    "architecture",
+    "fixture_sha256",
+    "request_seed",
+    "demand",
+    "booking",
+    "latencyMs",
+    "correctness_passed",
+    "valid"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "pair_id": {"type": "string", "minLength": 1},
+    "pair_order": {"enum": ["AB", "BA"]},
+    "architecture": {"enum": ["baseline", "optimized"]},
+    "architecture_git_sha": {"type": "string"},
+    "infra_git_sha": {"type": "string"},
+    "fixture_sha256": {"type": "string"},
+    "request_seed": {"type": "integer"},
+    "cache_condition": {"enum": ["none", "cold", "warm"]},
+    "load_level": {"enum": ["smoke", "L50", "L80", "L110", "soak", "failure"]},
+    "cohort_mix": {
+      "type": "object",
+      "required": ["legitimate", "bot_like"],
+      "properties": {
+        "legitimate": {"type": "number", "minimum": 0, "maximum": 1},
+        "bot_like": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "request_serving_vcpu_max_total": {"type": "number", "minimum": 0},
+        "request_serving_memory_gib_max_total": {"type": "number", "minimum": 0},
+        "database_class": {"type": "string"},
+        "estimated_hourly_usd": {"type": "number", "minimum": 0},
+        "actual_run_usd": {"type": "number", "minimum": 0}
+      }
+    },
+    "demand": {
+      "type": "object",
+      "required": ["offered", "started", "completed", "dropped"],
+      "properties": {
+        "offered": {"type": "integer", "minimum": 0},
+        "started": {"type": "integer", "minimum": 0},
+        "completed": {"type": "integer", "minimum": 0},
+        "dropped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "booking": {
+      "type": "object",
+      "required": ["confirmed_unique", "sold_out", "technical_failures", "oversells", "duplicate_charges"],
+      "properties": {
+        "confirmed_unique": {"type": "integer", "minimum": 0},
+        "sold_out": {"type": "integer", "minimum": 0},
+        "technical_failures": {"type": "integer", "minimum": 0},
+        "timeouts_unknown": {"type": "integer", "minimum": 0},
+        "oversells": {"type": "integer", "minimum": 0},
+        "duplicate_charges": {"type": "integer", "minimum": 0}
+      }
+    },
+    "latencyMs": {
+      "type": "object",
+      "required": ["terminal_p50", "terminal_p95", "terminal_p99"],
+      "properties": {
+        "terminal_p50": {"type": "number", "minimum": 0},
+        "terminal_p95": {"type": "number", "minimum": 0},
+        "terminal_p99": {"type": "number", "minimum": 0},
+        "queue_p99": {"type": "number", "minimum": 0}
+      }
+    },
+    "correctness_passed": {"type": "boolean"},
+    "generator_cpu_max_pct": {"type": "number", "minimum": 0, "maximum": 100},
+    "valid": {"type": "boolean"},
+    "invalid_reason": {"type": ["string", "null"]},
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "k6_raw": {"type": "string"},
+        "metrics": {"type": "string"},
+        "traces": {"type": "string"},
+        "reconciliation": {"type": "string"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"valid": {"const": true}},
+        "required": ["valid"]
+      },
+      "then": {
+        "properties": {
+          "correctness_passed": {"const": true},
+          "booking": {
+            "properties": {
+              "oversells": {"const": 0},
+              "duplicate_charges": {"const": 0}
+            }
+          }
+        }
+      }
+    }
+  ]
+}

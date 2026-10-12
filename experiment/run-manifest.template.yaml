@@ -1,0 +1,49 @@
+schema_version: "1.0"
+run_id: TO_SET
+pair_id: TO_SET
+pair_order: AB
+architecture: baseline
+versions:
+  application_git_sha: TO_SET
+  infrastructure_git_sha: TO_SET
+  image_digest: TO_SET
+fixture:
+  id: railflux-tatkal-v1
+  sha256: TO_SET
+  request_seed: 772910
+experiment:
+  inventory_profile: contention
+  cache_condition: none
+  load_level: L80
+  waf_mode: "off"
+  autoscaling:
+    enabled: false
+    policy_id: none
+  cohort_mix:
+    legitimate: 0.8
+    bot_like: 0.2
+  duration_seconds: 180
+resources:
+  request_serving_vcpu_max_total: TO_SET
+  request_serving_memory_gib_max_total: TO_SET
+  services:
+    baseline: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+    read: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+    booking: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+    worker: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+  database_class: TO_SET
+  cache_class: none
+cost:
+  estimated_hourly_usd: TO_SET
+  maximum_session_hours: TO_SET
+  expires_at: TO_SET
+failure_injection:
+  enabled: false
+  type: none
+validity_gates:
+  fixture_checksum_passed: false
+  health_passed: false
+  queue_empty_passed: false
+  generator_preflight_passed: false
+artifacts:
+  prefix: TO_SET
