@@ -19,7 +19,7 @@ M1 requires an implementable API contract before services, tests, and the shared
 ## Consequences
 
 - Implementation targets OpenAPI `1.0.0` until the principal experiment code freeze in the run manifest.
-- Issue M1-P1 (traceability matrix) maps test catalog IDs to these operationIds.
+- [requirements-traceability.md](../requirements-traceability.md) maps test catalog IDs to these operationIds.
 - Frontend (M8) consumes the same contract via generated or shared types.
 
 ## References
