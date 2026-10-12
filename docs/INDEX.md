@@ -56,3 +56,12 @@
 
 - [Two-person work plan](team-workplan.md)
 - [Risk register](risks.md)
+
+## Repository code (scaffold)
+
+- [Services](../services/README.md)
+- [Database](../database/README.md)
+- [Infrastructure](../infrastructure/README.md)
+- [Load tests](../load-tests/README.md)
+- [Frontend](../frontend/README.md) (M8)
+- [Experiment controller](../experiment/controller/README.md)

@@ -59,17 +59,47 @@ Credits may exclude taxes, domains, support plans, marketplace products, or part
 - [Cost plan](docs/operations/cost-plan.md)
 - [Implementation roadmap](docs/roadmap.md)
 
-## Planned repository layout
+## Repository layout
 
 ```text
-frontend/             React booking simulator
-services/             baseline, read, booking, and worker applications
-database/             migrations, fixtures, seeds, reconciliation SQL
-infrastructure/       CloudFormation profiles and deployment scripts
-load-tests/           k6 workloads and test data
-experiment/           protocol, controller CLI, schemas, manifests, and result templates
-docs/                 architecture, design, operations, decisions, research
+frontend/                 React booking simulator (M8)
+services/
+  baseline/               Monolith API (M2–M3)
+  read/                   Optimized read service (M4)
+  booking/                Optimized booking service (M4)
+  worker/                 Async side-effect consumer (M4)
+database/
+  migrations/             MySQL DDL
+  seeds/                  Fixture load
+  scripts/                migrate / seed / reset
+infrastructure/
+  compose/                Docker Compose profiles (M2+)
+  cloudformation/         AWS stacks: shared, baseline, optimized (M5)
+  scripts/                deploy and teardown helpers
+load-tests/
+  k6/                     Performance scripts (M6)
+  data/                   k6 fixtures
+  results/                Run exports (gitignored)
+experiment/               Protocol, schemas, manifests (existing)
+  controller/             Experiment CLI (M6)
+  runs/                   Per-run JSON artifacts (gitignored)
+docs/                     Architecture, design, operations, ADRs
+scripts/                  validate-openapi, GitHub bootstrap
 ```
+
+Each top-level code directory has a `README.md` with scope and milestone hints.
+
+## Developer scripts
+
+From the repository root (Node 20+):
+
+| Command | Action |
+| --- | --- |
+| `npm run validate:openapi` | Check OpenAPI v1 spec |
+| `./scripts/validate-openapi.sh` | Same as above |
+| `./scripts/bootstrap_github_issues.py` | Sync GitHub milestones/issues (optional) |
+
+See [scripts/README.md](scripts/README.md).
 
 ## Definition of success
 
