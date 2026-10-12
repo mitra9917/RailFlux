@@ -1,5 +1,7 @@
 # Six-Week Implementation Roadmap
 
+Execution tracking: GitHub milestones **M1–M8** and issues (see [Implementation plan](implementation-plan.md)). Frontend is **M8**, after the measurement path.
+
 ## Week 1: Contracts and local foundation
 
 - Freeze API v1, schema, state machine, invariants, and fixture manifest.

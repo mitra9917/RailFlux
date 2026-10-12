@@ -6,6 +6,7 @@
 - [Project description](../PROJECT_DESCRIPTION.md)
 - [Project charter](project-charter.md)
 - [Roadmap](roadmap.md)
+- [Implementation plan](implementation-plan.md)
 - [Definition of Done](definition-of-done.md)
 - [Requirements traceability](requirements-traceability.md)
 
