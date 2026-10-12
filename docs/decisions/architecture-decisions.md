@@ -59,3 +59,9 @@
 **Decision:** Use native CloudFormation with baseline/optimized parameters or nested stacks.  
 **Reason:** Course alignment, repeatability, and no additional state backend.  
 **Consequence:** Templates must expose session limits, tags, and teardown-safe dependencies.
+
+## ADR-011: HTTP API v1.0.0 freeze
+
+**Decision:** Freeze `docs/design/api-spec.yaml` at version **1.0.0** for all baseline and optimized implementations.  
+**Reason:** M1 gate requires a stable contract before services and tests are scaffolded.  
+**Consequence:** Breaking API changes need a new major version and ADR update. See [ADR-011 detail](ADR-011-api-v1-freeze.md).

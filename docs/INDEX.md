@@ -27,7 +27,7 @@
 
 ## Detailed design
 
-- [OpenAPI plan](design/api-spec.yaml)
+- [OpenAPI v1 contract](design/api-spec.yaml)
 - [Data and consistency](design/data-consistency.md)
 - [Cache and queue](design/cache-and-queue.md)
 

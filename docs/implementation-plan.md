@@ -15,7 +15,7 @@ GitHub tracks execution via **milestones M1–M8**, **area/type/profile labels**
 | Layer | Status | Notes |
 | --- | --- | --- |
 | Architecture & design | **Complete (planning)** | Baseline/optimized docs, flows, network, ADRs |
-| API contract | **Draft** | `design/api-spec.yaml` at `1.0.0-planning` — must be frozen in M1 |
+| API contract | **Frozen v1.0.0** | `design/api-spec.yaml` — see [ADR-011](decisions/ADR-011-api-v1-freeze.md) |
 | Data model | **Specified** | ER diagram and invariants in `design/data-consistency.md` — not migrated |
 | Experiment design | **Complete (planning)** | Protocol, hypotheses, manifests, correctness SQL template, result schema |
 | Application code | **Missing** | No `frontend/`, `services/`, `database/`, `infrastructure/`, `load-tests/` |
