@@ -104,6 +104,9 @@ From the repository root (Node 20+):
 | `./database/scripts/load-fixture.sh` | Verify fixture checksums + seed |
 | `./database/scripts/seed.sh` | Verify + migrate + seed |
 | `./database/scripts/reset.sh` | Clear run state and restore inventory |
+| `npm run ci` | Same checks as GitHub Actions (OpenAPI, fixture, shared package, tests) |
+| `npm run ci` | Same checks as GitHub Actions (OpenAPI, fixture, shared package, tests) |
+| `npm run ci` | Same checks as GitHub Actions (OpenAPI, fixture, shared package, tests) |
 | `./scripts/validate-openapi.sh` | Same as above |
 | `./scripts/bootstrap_github_issues.py` | Sync GitHub milestones/issues (optional) |
 

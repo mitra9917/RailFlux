@@ -3,6 +3,7 @@
 | Script | Purpose |
 | --- | --- |
 | `validate-openapi.sh` | Validate `docs/design/api-spec.yaml` (also `npm run validate:openapi`) |
+| `npm run ci` | Full local CI (see `.github/workflows/ci.yml`) |
 | `bootstrap_github_issues.py` | Idempotently recreate GitHub labels, milestones, and tracked issues |
 
 Database fixture (under `database/scripts/`):

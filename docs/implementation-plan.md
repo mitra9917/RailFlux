@@ -21,7 +21,7 @@ GitHub tracks execution via **milestones M1–M8**, **area/type/profile labels**
 | Application code | **Missing** | No `frontend/`, `services/`, `database/`, `infrastructure/`, `load-tests/` |
 | Local runtime | **Missing** | No Docker Compose, no seed/reset automation |
 | AWS | **Account ready** | CLI profile `railflux`; IaC and deploy scripts not in repo |
-| CI | **Missing** | No workflow for tests, OpenAPI validation, or migration checks |
+| CI | **Baseline** | GitHub Actions `CI` workflow on push/PR to `main` (`npm run ci`) |
 | Frontend | **Deferred** | Last milestone per team preference |
 
 ### Verdict
