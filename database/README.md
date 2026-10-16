@@ -21,3 +21,14 @@ export $(grep -v '^#' database/.env | xargs) 2>/dev/null || true
 ```
 
 Initial migration: `migrations/001_core_schema.sql` (users, trains, inventory, bookings, idempotency, outbox, processed_events).
+
+## Seed and reset
+
+```bash
+./database/scripts/seed.sh    # migrate + load deterministic users/trains/inventory
+./database/scripts/reset.sh   # clear bookings/payments/idempotency/outbox; restore seats
+```
+
+**Idempotent workflow:** `seed.sh` → experiment run → `reset.sh` → next run (same fixture data; inventory restored). Re-run `seed.sh` to rebuild static fixture rows from the manifest.
+
+Queue/DLQ depth is not stored in MySQL; reset those via the experiment controller when ElasticMQ/SQS is wired (M4/M6).
