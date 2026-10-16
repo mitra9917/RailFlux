@@ -101,7 +101,8 @@ From the repository root (Node 20+):
 | `npm run build:shared` | Build `@railflux/shared` TypeScript types |
 | `npm run typecheck:shared` | Typecheck shared package only |
 | `./database/scripts/migrate.sh` | Apply MySQL migrations (requires local MySQL) |
-| `./database/scripts/seed.sh` | Migrate + deterministic fixture seed |
+| `./database/scripts/load-fixture.sh` | Verify fixture checksums + seed |
+| `./database/scripts/seed.sh` | Verify + migrate + seed |
 | `./database/scripts/reset.sh` | Clear run state and restore inventory |
 | `./scripts/validate-openapi.sh` | Same as above |
 | `./scripts/bootstrap_github_issues.py` | Sync GitHub milestones/issues (optional) |

@@ -25,8 +25,16 @@ Initial migration: `migrations/001_core_schema.sql` (users, trains, inventory, b
 ## Seed and reset
 
 ```bash
-./database/scripts/seed.sh    # migrate + load deterministic users/trains/inventory
-./database/scripts/reset.sh   # clear bookings/payments/idempotency/outbox; restore seats
+./database/scripts/load-fixture.sh   # verify checksums, migrate, seed (preferred entrypoint)
+./database/scripts/verify-fixture.mjs # checksum only; exits non-zero if invalid
+./database/scripts/seed.sh             # verify + migrate + seed
+./database/scripts/reset.sh            # clear bookings/payments/idempotency/outbox; restore seats
+```
+
+After changing migrations or `generate-seed-sql.mjs`, refresh pinned checksums:
+
+```bash
+node database/scripts/update-manifest-checksums.mjs
 ```
 
 **Idempotent workflow:** `seed.sh` → experiment run → `reset.sh` → next run (same fixture data; inventory restored). Re-run `seed.sh` to rebuild static fixture rows from the manifest.

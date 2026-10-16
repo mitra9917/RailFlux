@@ -10,7 +10,7 @@
 
 ## Before each run
 
-1. Restore fixture and verify schema/fixture checksums.
+1. Restore fixture and verify schema/fixture checksums (`node database/scripts/verify-fixture.mjs`; copy JSON `fixture_sha256` into the run manifest `fixture.sha256` field).
 2. Empty bookings, idempotency, outbox, processed events, SQS, and DLQ.
    - **Local MySQL:** `./database/scripts/reset.sh` (restores `seat_inventory` for the manifest `fixture_id`).
    - **Initial or full fixture rebuild:** `./database/scripts/seed.sh` (runs migrations, then deterministic seed from `experiment/fixtures/manifest.yaml`).
