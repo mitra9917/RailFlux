@@ -78,8 +78,8 @@ jobs:
 
       - name: Assert seeded row counts
         run: |
-          users="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM users;')"
-          inventory="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM seat_inventory;')"
+          users="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM users;')"
+          inventory="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM seat_inventory;')"
           test "$users" -eq 5000
           test "$inventory" -eq 300
 
@@ -88,5 +88,5 @@ jobs:
 
       - name: Assert reset cleared bookings
         run: |
-          bookings="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM bookings;')"
+          bookings="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM bookings;')"
           test "$bookings" -eq 0
