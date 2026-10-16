@@ -35,6 +35,13 @@ jobs:
     name: MySQL migrate and fixture load
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_PWD: railflux
+      MYSQL_DATABASE: railflux
     services:
       mysql:
         image: mysql:8.0
@@ -67,21 +74,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
       - name: Load fixture (migrate, verify checksum, seed)
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3306
-          MYSQL_USER: railflux
-          MYSQL_PASSWORD: railflux
-          MYSQL_DATABASE: railflux
         run: ./database/scripts/load-fixture.sh
 
       - name: Assert seeded row counts
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3306
-          MYSQL_USER: railflux
-          MYSQL_PASSWORD: railflux
-          MYSQL_DATABASE: railflux
         run: |
           users="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM users;')"
           inventory="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM seat_inventory;')"
@@ -89,21 +84,9 @@ jobs:
           test "$inventory" -eq 300
 
       - name: Reset experiment state
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3306
-          MYSQL_USER: railflux
-          MYSQL_PASSWORD: railflux
-          MYSQL_DATABASE: railflux
         run: ./database/scripts/reset.sh
 
       - name: Assert reset cleared bookings
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PORT: 3306
-          MYSQL_USER: railflux
-          MYSQL_PASSWORD: railflux
-          MYSQL_DATABASE: railflux
         run: |
           bookings="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -N -e 'SELECT COUNT(*) FROM bookings;')"
           test "$bookings" -eq 0
