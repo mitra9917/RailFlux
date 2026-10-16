@@ -62,6 +62,8 @@ Credits may exclude taxes, domains, support plans, marketplace products, or part
 ## Repository layout
 
 ```text
+packages/
+  shared/                 @railflux/shared API types and errors (OpenAPI v1)
 frontend/                 React booking simulator (M8)
 services/
   baseline/               Monolith API (M2–M3)
@@ -96,6 +98,8 @@ From the repository root (Node 20+):
 | Command | Action |
 | --- | --- |
 | `npm run validate:openapi` | Check OpenAPI v1 spec |
+| `npm run build:shared` | Build `@railflux/shared` TypeScript types |
+| `npm run typecheck:shared` | Typecheck shared package only |
 | `./scripts/validate-openapi.sh` | Same as above |
 | `./scripts/bootstrap_github_issues.py` | Sync GitHub milestones/issues (optional) |
 

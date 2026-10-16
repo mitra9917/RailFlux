@@ -3,8 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "description": "RailFlux experiment monorepo (implementation in progress)",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "validate:openapi": "./scripts/validate-openapi.sh"
+    "validate:openapi": "./scripts/validate-openapi.sh",
+    "build:shared": "npm run build -w @railflux/shared",
+    "typecheck:shared": "npm run typecheck -w @railflux/shared"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"

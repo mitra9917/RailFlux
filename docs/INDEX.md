@@ -59,6 +59,7 @@
 
 ## Repository code (scaffold)
 
+- [Shared API types (`@railflux/shared`)](../packages/shared/README.md)
 - [Services](../services/README.md)
 - [Database](../database/README.md)
 - [Infrastructure](../infrastructure/README.md)
