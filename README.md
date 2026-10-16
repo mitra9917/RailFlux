@@ -100,6 +100,7 @@ From the repository root (Node 20+):
 | `npm run validate:openapi` | Check OpenAPI v1 spec |
 | `npm run build:shared` | Build `@railflux/shared` TypeScript types |
 | `npm run typecheck:shared` | Typecheck shared package only |
+| `./database/scripts/migrate.sh` | Apply MySQL migrations (requires local MySQL) |
 | `./scripts/validate-openapi.sh` | Same as above |
 | `./scripts/bootstrap_github_issues.py` | Sync GitHub milestones/issues (optional) |
 
