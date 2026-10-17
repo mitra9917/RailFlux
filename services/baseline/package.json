@@ -1,0 +1,22 @@
+{
+  "name": "@railflux/baseline",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Baseline monolith: search, availability, booking (M2+)",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@railflux/shared": "0.0.0",
+    "express": "^5.1.0",
+    "mysql2": "^3.15.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.5"
+  }
+}
