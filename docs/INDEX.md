@@ -7,6 +7,7 @@
 - [Project charter](project-charter.md)
 - [Roadmap](roadmap.md)
 - [Implementation plan](implementation-plan.md)
+- [M1 acceptance gate](milestones/M1-acceptance.md)
 - [Definition of Done](definition-of-done.md)
 - [Requirements traceability](requirements-traceability.md)
 

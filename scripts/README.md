@@ -15,3 +15,4 @@ Database fixture (under `database/scripts/`):
 | `update-manifest-checksums.mjs` | Regenerate `checksums` in `experiment/fixtures/manifest.yaml` |
 
 Run from repository root unless noted.
+| `m1-gate.sh` | M1 acceptance (npm run ci) |

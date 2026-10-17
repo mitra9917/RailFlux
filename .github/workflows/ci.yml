@@ -30,3 +30,63 @@ jobs:
 
       - name: Run CI checks
         run: npm run ci
+
+  database-smoke:
+    name: MySQL migrate and fixture load
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_PWD: railflux
+      MYSQL_DATABASE: railflux
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: railflux
+          MYSQL_USER: railflux
+          MYSQL_PASSWORD: railflux
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Load fixture (migrate, verify checksum, seed)
+        run: ./database/scripts/load-fixture.sh
+
+      - name: Assert seeded row counts
+        run: |
+          users="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM users;')"
+          inventory="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM seat_inventory;')"
+          test "$users" -eq 5000
+          test "$inventory" -eq 300
+
+      - name: Reset experiment state
+        run: ./database/scripts/reset.sh
+
+      - name: Assert reset cleared bookings
+        run: |
+          bookings="$(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -D "$MYSQL_DATABASE" -N -e 'SELECT COUNT(*) FROM bookings;')"
+          test "$bookings" -eq 0
