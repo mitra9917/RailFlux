@@ -38,4 +38,15 @@ curl -s http://127.0.0.1:3000/health/ready
 | `npm run build -w @railflux/baseline` | Compile to `dist/` |
 | `npm run start -w @railflux/baseline` | Run compiled server |
 
-OpenAPI v1 routes (`/v1/*`) are added in M2 issues #12–#14.
+## Synthetic JWT (`syntheticJwt`)
+
+All `/v1/*` routes require `Authorization: Bearer <JWT>` (health routes stay public). Tokens are **local synthetic identities only** — never real IRCTC credentials. Set `SYNTHETIC_JWT_SECRET` in `.env` (see `.env.example`).
+
+Mint a token for manual testing (use a `users.id` UUID from the fixture):
+
+```bash
+npm run build:shared
+node scripts/mint-synthetic-jwt.mjs 11111111-1111-4111-8111-111111111111
+```
+
+OpenAPI v1 handlers (`/v1/search`, etc.) are added in M2 issues #12–#14; the JWT middleware is already enforced on the `/v1` prefix.

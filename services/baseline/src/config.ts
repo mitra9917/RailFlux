@@ -2,6 +2,7 @@ export type ServiceConfig = {
   nodeEnv: string;
   port: number;
   profile: 'baseline';
+  syntheticJwtSecret: string;
   mysql: {
     host: string;
     port: number;
@@ -21,6 +22,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     nodeEnv: env.NODE_ENV ?? 'development',
     port: Number(env.PORT ?? '3000'),
     profile: 'baseline',
+    syntheticJwtSecret: required('SYNTHETIC_JWT_SECRET', env.SYNTHETIC_JWT_SECRET),
     mysql: {
       host: env.MYSQL_HOST ?? '127.0.0.1',
       port: Number(env.MYSQL_PORT ?? '3306'),
