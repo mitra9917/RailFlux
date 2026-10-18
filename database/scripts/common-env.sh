@@ -14,6 +14,8 @@ if [[ -n "$MYSQL_PASSWORD" ]]; then
   export MYSQL_PWD="$MYSQL_PASSWORD"
 fi
 
+MYSQL_CLI="${MYSQL_CLI:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mysql-cli.sh}"
+
 mysql_exec() {
-  mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP -D "$MYSQL_DATABASE" "$@"
+  "$MYSQL_CLI" -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP -D "$MYSQL_DATABASE" "$@"
 }

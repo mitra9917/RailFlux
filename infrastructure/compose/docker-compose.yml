@@ -1,0 +1,24 @@
+# Local MySQL for baseline dev (matches CI service env in .github/workflows/ci.yml).
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: railflux-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: railflux
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+    ports:
+      # Host 3307 avoids conflict with a local MySQL install on 3306 (common on macOS).
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+    volumes:
+      - railflux-mysql-data:/var/lib/mysql
+
+volumes:
+  railflux-mysql-data:

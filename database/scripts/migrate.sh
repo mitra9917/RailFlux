@@ -10,13 +10,14 @@ MYSQL_USER="${MYSQL_USER:-railflux}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-railflux}"
 MYSQL_DATABASE="${MYSQL_DATABASE:-railflux}"
 
-MYSQL_CMD=(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP)
+MYSQL_CLI="${MYSQL_CLI:-$(cd "$(dirname "$0")" && pwd)/mysql-cli.sh}"
+MYSQL_CMD=("$MYSQL_CLI" -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP)
 if [[ -n "$MYSQL_PASSWORD" ]]; then
   export MYSQL_PWD="$MYSQL_PASSWORD"
 fi
 
 ensure_database() {
-  mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP \
+  "$MYSQL_CLI" -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" --protocol=TCP \
     -e "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 }
 
@@ -46,8 +47,14 @@ apply_migration() {
 
 main() {
   if ! command -v mysql >/dev/null 2>&1; then
-    echo "mysql client not found; install MySQL client to run migrations." >&2
-    exit 1
+    if ! command -v docker >/dev/null 2>&1; then
+      echo "mysql client not found; install MySQL client or Docker (npm run db:up)." >&2
+      exit 1
+    fi
+    if ! docker compose -f "${ROOT}/infrastructure/compose/docker-compose.yml" ps --status running mysql 2>/dev/null | grep -q mysql; then
+      echo "mysql client not found; start Compose MySQL first: npm run db:up" >&2
+      exit 1
+    fi
   fi
 
   ensure_database

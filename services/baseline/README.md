@@ -4,15 +4,22 @@ Node.js + TypeScript + Express service for the **baseline** profile (single proc
 
 ## Run locally
 
-Requires MySQL with schema and fixture loaded (`../../database/scripts/load-fixture.sh`).
+**Recommended (Docker MySQL, no local `mysql` CLI required):**
 
 ```bash
-cp .env.example .env
 # from repository root:
+cp services/baseline/.env.example services/baseline/.env
 npm install
 npm run build:shared
+npm run db:bootstrap          # Docker MySQL + migrate + fixture
 npm run dev -w @railflux/baseline
 ```
+
+Compose MySQL listens on host **3307** (see `.env.example`). A separate MySQL on **3306** is fine.
+
+Manual DB only: `../../database/scripts/load-fixture.sh` against your own MySQL 8.
+
+On startup, the service loads `services/baseline/.env` (via `dotenv`). Without that file or the `MYSQL_*` keys, you will see `Missing required environment variable: MYSQL_USER`.
 
 Verify:
 
