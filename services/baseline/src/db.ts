@@ -26,7 +26,9 @@ export async function pingDatabase(pool: DbPool): Promise<boolean> {
     } finally {
       conn.release();
     }
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(JSON.stringify({ event: 'mysql_ping_failed', message }));
     return false;
   }
 }

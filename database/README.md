@@ -12,7 +12,13 @@ Post-run checks: `experiment/correctness.sql` (invoked by experiment controller,
 
 ## Migrations
 
-Requires MySQL 8 client (`mysql`) and a running server.
+Requires MySQL 8 (local or Docker). Host `mysql` CLI is optional if Docker Compose MySQL is running (`npm run db:up`).
+
+```bash
+npm run db:bootstrap   # preferred: Compose MySQL + migrate + seed
+```
+
+Or manually:
 
 ```bash
 cp database/.env.example database/.env   # optional; or export vars

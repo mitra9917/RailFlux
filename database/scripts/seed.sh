@@ -6,8 +6,8 @@ ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # shellcheck source=common-env.sh
 source "${SCRIPT_DIR}/common-env.sh"
 
-if ! command -v mysql >/dev/null 2>&1; then
-  echo "mysql client not found" >&2
+if ! command -v mysql >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+  echo "mysql client not found; install MySQL client or use Docker (npm run db:up)" >&2
   exit 1
 fi
 
