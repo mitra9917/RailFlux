@@ -15,7 +15,7 @@ export function createApp(config: ServiceConfig, pool: DbPool) {
   app.use(
     '/v1',
     createSyntheticJwtMiddleware(config.syntheticJwtSecret),
-    createV1Router(),
+    createV1Router(pool),
   );
 
   app.get('/health', (_req, res) => {
