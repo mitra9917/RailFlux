@@ -49,4 +49,16 @@ npm run build:shared
 node scripts/mint-synthetic-jwt.mjs 11111111-1111-4111-8111-111111111111
 ```
 
-OpenAPI v1 handlers (`/v1/search`, etc.) are added in M2 issues #12–#14; the JWT middleware is already enforced on the `/v1` prefix.
+### Search (`GET /v1/search`)
+
+Requires JWT. Query params: `from`, `to`, `date` (ISO `YYYY-MM-DD`). Fixture journey date is **`2026-04-01`**; pick `from`/`to` from the `trains` table in TablePlus.
+
+```bash
+TOKEN="$(node scripts/mint-synthetic-jwt.mjs <users.id-uuid>)"
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://127.0.0.1:3000/v1/search?from=SAB&to=SAA&date=2026-04-01"
+```
+
+Response includes `items` (train runs) and advisory `freshness` (`authoritative: false`, `cacheStatus: BYPASS` on baseline).
+
+Availability and booking routes: M2 #13–#14.
