@@ -123,4 +123,8 @@ Deterministic authorize outcomes from `experiment/fixtures/manifest.yaml` (`paym
 
 When authorization fails, `finalizeBookingAfterPaymentFailure` in `src/services/payment-failure-release.ts` moves the booking to terminal `FAILED`, marks the payment `FAILED`, and calls `releaseInventorySeats` once (optimistic version; stale retry → no double release). Integration: `npm run test:payment-failure` (TC-008).
 
+### Synchronous outbox (M3)
+
+On confirmation, `insertBookingConfirmedOutboxEvent` writes a durable `BOOKING_CONFIRMED` row in the same DB transaction; `processBookingConfirmedOutboxSynchronously` runs the baseline inline handler and records `processed_events` + `published_at` (no queue). Integration: `npm run test:booking-outbox`.
+
 Booking routes: M2 #14+.
