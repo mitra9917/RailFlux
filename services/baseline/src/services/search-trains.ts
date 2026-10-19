@@ -6,16 +6,9 @@ interface SearchRow extends RowDataPacket {
   trainRunId: string;
   trainNo: string;
   name: string;
-  journeyDate: Date | string;
+  journeyDate: string;
   source: string;
   destination: string;
-}
-
-function formatJourneyDate(value: Date | string): string {
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
-  }
-  return value.slice(0, 10);
 }
 
 export async function searchTrains(pool: DbPool, query: SearchTrainsQuery): Promise<TrainRun[]> {
@@ -23,7 +16,7 @@ export async function searchTrains(pool: DbPool, query: SearchTrainsQuery): Prom
     `SELECT tr.id AS trainRunId,
             t.train_no AS trainNo,
             t.name,
-            tr.journey_date AS journeyDate,
+            DATE_FORMAT(tr.journey_date, '%Y-%m-%d') AS journeyDate,
             t.source,
             t.destination
      FROM train_runs tr
@@ -37,7 +30,7 @@ export async function searchTrains(pool: DbPool, query: SearchTrainsQuery): Prom
     trainRunId: row.trainRunId,
     trainNo: row.trainNo,
     name: row.name,
-    date: formatJourneyDate(row.journeyDate),
+    date: row.journeyDate,
     from: row.source,
     to: row.destination,
   }));

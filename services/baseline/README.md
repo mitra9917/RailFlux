@@ -61,4 +61,15 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Response includes `items` (train runs) and advisory `freshness` (`authoritative: false`, `cacheStatus: BYPASS` on baseline).
 
-Availability and booking routes: M2 #13–#14.
+### Availability (`GET /v1/availability`)
+
+Requires JWT. Query: `trainRunId` (UUID from search), `class` (`SL` | `3A` | `2A`), `quota` (`TATKAL`).
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://127.0.0.1:3000/v1/availability?trainRunId=<trainRunId>&class=3A&quota=TATKAL"
+```
+
+Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cacheStatus: BYPASS` on baseline). Unknown run/bucket → **404** `NOT_FOUND`.
+
+Booking routes: M2 #14+.
