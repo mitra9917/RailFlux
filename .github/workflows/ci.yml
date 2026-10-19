@@ -121,6 +121,9 @@ jobs:
       - name: M3 booking create path TC-003/004/008/009
         run: npm run test:booking-create
 
+      - name: Concurrent last-seat contention (TC-007)
+        run: npm run test:tc007-contention
+
       - name: Post-run correctness SQL (M3 #27)
         env:
           RUN_ID: ci-correctness-smoke
