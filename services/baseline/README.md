@@ -4,15 +4,21 @@ Node.js + TypeScript + Express service for the **baseline** profile (single proc
 
 ## Run locally
 
-**Recommended (Docker MySQL, no local `mysql` CLI required):**
+**Daily dev (one terminal):**
 
 ```bash
-# from repository root:
+# from repository root (first time only: npm install && npm run db:bootstrap)
+npm run dev:stack
+```
+
+Starts Docker **MySQL** on **3307**, then the baseline API on **3000**. Ctrl+C stops the API only; MySQL stays up.
+
+**First-time DB setup:**
+
+```bash
 cp services/baseline/.env.example services/baseline/.env
 npm install
-npm run build:shared
-npm run db:bootstrap          # Docker MySQL + migrate + fixture
-npm run dev -w @railflux/baseline
+npm run db:bootstrap
 ```
 
 Compose MySQL listens on host **3307** (see `.env.example`). A separate MySQL on **3306** is fine.
