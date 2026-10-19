@@ -1,4 +1,5 @@
 # Local MySQL for baseline dev (matches CI service env in .github/workflows/ci.yml).
+# Full read path: copy .env.example → .env (sets COMPOSE_PROFILES=baseline), then `docker compose up`.
 services:
   mysql:
     image: mysql:8.0
@@ -20,6 +21,23 @@ services:
     volumes:
       - railflux-mysql-data:/var/lib/mysql
 
+  db-init:
+    profiles: [baseline]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.db-init
+    container_name: railflux-db-init
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_DATABASE: railflux
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
   baseline:
     profiles: [baseline]
     build:
@@ -28,19 +46,20 @@ services:
     container_name: railflux-baseline
     environment:
       NODE_ENV: development
-      PORT: 3000
-      SERVICE_PROFILE: baseline
-      SYNTHETIC_JWT_SECRET: dev-only-change-me
+      PORT: "3000"
+      SYNTHETIC_JWT_SECRET: ${SYNTHETIC_JWT_SECRET:-dev-only-change-me}
       MYSQL_HOST: mysql
-      MYSQL_PORT: 3306
+      MYSQL_PORT: "3306"
       MYSQL_USER: railflux
       MYSQL_PASSWORD: railflux
       MYSQL_DATABASE: railflux
     ports:
-      - "3000:3000"
+      - "${BASELINE_HOST_PORT:-3000}:3000"
     depends_on:
       mysql:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [

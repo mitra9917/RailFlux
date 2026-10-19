@@ -31,6 +31,9 @@ jobs:
       - name: Run CI checks
         run: npm run ci
 
+      - name: Build Compose baseline profile images
+        run: docker compose -f infrastructure/compose/docker-compose.yml --project-directory infrastructure/compose --profile baseline build
+
   database-smoke:
     name: MySQL migrate and fixture load
     runs-on: ubuntu-latest
