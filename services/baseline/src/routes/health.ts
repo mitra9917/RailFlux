@@ -1,20 +1,27 @@
-import { Router } from 'express';
-import type { HealthStatus } from '@railflux/shared';
+import { Router, type Response } from 'express';
+import {
+  HEALTH_LIVE_PATH,
+  HEALTH_READY_PATH,
+  type HealthStatus,
+} from '@railflux/shared';
 import type { DbPool } from '../db.js';
 import { pingDatabase } from '../db.js';
+
+function sendHealthJson(res: Response, status: number, body: HealthStatus) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(status).json(body);
+}
 
 export function createHealthRouter(pool: DbPool): Router {
   const router = Router();
 
-  router.get('/health/live', (_req, res) => {
-    const body: HealthStatus = { status: 'ok' };
-    res.status(200).json(body);
+  router.get(HEALTH_LIVE_PATH, (_req, res) => {
+    sendHealthJson(res, 200, { status: 'ok' });
   });
 
-  router.get('/health/ready', async (_req, res) => {
+  router.get(HEALTH_READY_PATH, async (_req, res) => {
     const ok = await pingDatabase(pool);
-    const body: HealthStatus = { status: ok ? 'ok' : 'fail' };
-    res.status(ok ? 200 : 503).json(body);
+    sendHealthJson(res, ok ? 200 : 503, { status: ok ? 'ok' : 'fail' });
   });
 
   return router;

@@ -21,14 +21,20 @@ Manual DB only: `../../database/scripts/load-fixture.sh` against your own MySQL 
 
 On startup, the service loads `services/baseline/.env` (via `dotenv`). Without that file or the `MYSQL_*` keys, you will see `Missing required environment variable: MYSQL_USER`.
 
-Verify:
+Verify (no JWT):
 
 ```bash
 curl -s http://127.0.0.1:3000/health/live
 curl -s http://127.0.0.1:3000/health/ready
+npm run health:check
 ```
 
-`/health/ready` returns **503** until MySQL is reachable and the database exists.
+| Probe | Meaning |
+| --- | --- |
+| `/health/live` | Process up → always **200** `ok` |
+| `/health/ready` | MySQL reachable → **200** `ok`; else **503** `fail` |
+
+Compose / ALB: see [infrastructure/compose/README.md](../../infrastructure/compose/README.md).
 
 ## Scripts
 
