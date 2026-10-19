@@ -35,6 +35,16 @@ curl -s http://127.0.0.1:3000/health/ready
 npm run health:check
 ```
 
+**TC-001 integration** (catalog search/availability against MySQL + this app):
+
+```bash
+export MYSQL_PORT=3307   # if using compose/dev-stack MySQL
+export SYNTHETIC_JWT_SECRET=dev-only-change-me
+npm run test:tc001
+```
+
+`npm test` includes the same file but **skips** when MySQL is down so CI unit checks stay green on laptops without a DB.
+
 | Probe | Meaning |
 | --- | --- |
 | `/health/live` | Process up → always **200** `ok` |

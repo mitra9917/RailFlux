@@ -15,6 +15,7 @@
     "typecheck:shared": "npm run typecheck -w @railflux/shared",
     "typecheck:baseline": "npm run typecheck -w @railflux/baseline",
     "test": "npm run build:shared && npm run build:baseline && node --test tests/*.test.mjs",
+    "test:tc001": "npm run build:shared && npm run build:baseline && TC001_INTEGRATION=1 node --test tests/tc001-integration.test.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
     "compose:baseline": "docker compose -f infrastructure/compose/docker-compose.yml --profile baseline up -d --build",
     "dev:stack": "./scripts/dev-stack.sh",
