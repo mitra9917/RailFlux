@@ -22,6 +22,8 @@
     "test:payment-failure": "npm run build:shared && npm run build:baseline && PAYMENT_FAILURE_INTEGRATION=1 node --test tests/integration/payment-failure.test.mjs",
     "test:booking-outbox": "npm run build:shared && npm run build:baseline && OUTBOX_INTEGRATION=1 node --test tests/integration/booking-outbox.test.mjs",
     "test:get-booking": "npm run build:shared && npm run build:baseline && GET_BOOKING_INTEGRATION=1 node --test tests/integration/get-booking.test.mjs",
+    "test:correctness": "npm run build:baseline && CORRECTNESS_INTEGRATION=1 node --test tests/integration/correctness-runner.test.mjs",
+    "run:correctness": "node database/scripts/run-correctness.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
     "compose:baseline": "./scripts/compose-baseline-up.sh",
     "dev:stack": "./scripts/dev-stack.sh",
