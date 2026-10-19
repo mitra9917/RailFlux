@@ -12,7 +12,7 @@ async function main() {
     console.log(
       JSON.stringify({
         event: 'server_started',
-        profile: config.profile,
+        architecture: config.profile,
         port: config.port,
       }),
     );

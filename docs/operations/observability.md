@@ -14,6 +14,25 @@ Every request and background event carries:
 
 Logs are structured JSON and exclude synthetic passenger/payment payloads.
 
+### Baseline HTTP request log (`http_request`)
+
+Emitted once per HTTP response (stdout JSON line):
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `event` | yes | Always `http_request` |
+| `architecture` | yes | `baseline` for the monolith |
+| `request_id` | yes | Server-generated UUID; echoed as response header `X-Request-Id` |
+| `run_id` | no | Present when client sends valid optional header `X-Run-Id` (OpenAPI `RunIdHeader`) |
+| `run_id_rejected` | no | `true` when `X-Run-Id` was sent but failed pattern validation |
+| `method` | yes | HTTP method |
+| `path` | yes | Express path (no query string; avoids logging sensitive query data at scale) |
+| `operation` | yes | `search`, `availability`, `booking`, `health`, or `unknown` |
+| `status` | yes | Response status code |
+| `duration_ms` | yes | Wall time for the request |
+
+Never log: `Authorization`, raw JWT, passenger names, payment tokens, or idempotency keys.
+
 ## Primary SLO for experiments
 
 At a given offered booking-start rate:
