@@ -98,6 +98,16 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cacheStatus: BYPASS` on baseline). Unknown run/bucket → **404** `NOT_FOUND`.
 
+### GET /v1/bookings/{bookingId} (M3)
+
+Requires JWT. Returns `BookingResult` for terminal or in-progress states (TC-009: reconcile after client timeout/disconnect). Unknown id → **404** `NOT_FOUND`; malformed UUID → **400** `VALIDATION_ERROR`.
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:3000/v1/bookings/<bookingId>"
+```
+
+Integration: `npm run test:get-booking` (set `MYSQL_PORT=3307` when using Compose MySQL).
+
 ### Idempotency (POST /v1/bookings, M3)
 
 Requires header **`Idempotency-Key`** (16–128 chars).
