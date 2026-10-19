@@ -99,3 +99,6 @@ jobs:
           TC001_INTEGRATION: "1"
           SYNTHETIC_JWT_SECRET: ci-tc001-integration-secret
         run: npm run test:tc001
+
+      - name: Atomic inventory claim integration (TC-004)
+        run: npm run test:claim-inventory
