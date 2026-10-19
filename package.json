@@ -17,6 +17,7 @@
     "test": "npm run build:shared && npm run build:baseline && node --test tests/*.test.mjs",
     "test:tc001": "npm run build:shared && npm run build:baseline && TC001_INTEGRATION=1 node --test tests/integration/tc001-integration.test.mjs",
     "test:claim-inventory": "npm run build:shared && npm run build:baseline && CLAIM_INTEGRATION=1 node --test tests/integration/claim-inventory.test.mjs",
+    "test:idempotency-replay": "npm run build:shared && npm run build:baseline && IDEMPOTENCY_INTEGRATION=1 node --test tests/integration/idempotency-replay.test.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
     "compose:baseline": "./scripts/compose-baseline-up.sh",
     "dev:stack": "./scripts/dev-stack.sh",

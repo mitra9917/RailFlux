@@ -102,3 +102,6 @@ jobs:
 
       - name: Atomic inventory claim integration (TC-004)
         run: npm run test:claim-inventory
+
+      - name: Idempotency replay integration (TC-005)
+        run: npm run test:idempotency-replay
