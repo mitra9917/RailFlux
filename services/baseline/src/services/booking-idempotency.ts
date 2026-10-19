@@ -62,6 +62,17 @@ export async function getIdempotencyRecord(
   return rows[0] ?? null;
 }
 
+export async function attachIdempotencyBookingId(
+  db: DbExecutor,
+  idempotencyKeyHash: string,
+  bookingId: string,
+): Promise<void> {
+  await db.query(
+    `UPDATE booking_idempotency SET booking_id = ? WHERE idempotency_key_hash = ?`,
+    [bookingId, idempotencyKeyHash],
+  );
+}
+
 export async function insertIdempotencyInProgress(
   db: DbExecutor,
   input: {

@@ -98,6 +98,12 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cacheStatus: BYPASS` on baseline). Unknown run/bucket → **404** `NOT_FOUND`.
 
+### POST /v1/bookings (M3)
+
+Requires JWT, **`Idempotency-Key`**, and body per OpenAPI `CreateBooking`. Optional **`X-Run-Id`**. Success → **201** `CONFIRMED` with simulated PNR; sold out → **409**; payment stub failure → **422** `FAILED`.
+
+Integration: `npm run test:booking-create`; full M3 catalog bundle: `npm run test:m3-tc003-009` (set `MYSQL_PORT=3307` for Compose MySQL).
+
 ### GET /v1/bookings/{bookingId} (M3)
 
 Requires JWT. Returns `BookingResult` for terminal or in-progress states (TC-009: reconcile after client timeout/disconnect). Unknown id → **404** `NOT_FOUND`; malformed UUID → **400** `VALIDATION_ERROR`.
@@ -117,7 +123,7 @@ Requires header **`Idempotency-Key`** (16–128 chars).
 | Same key + same body (terminal stored) | **200** replay (TC-005) |
 | Same key + different body | **409** `IDEMPOTENCY_CONFLICT` (TC-006) |
 | Same key + same body (still processing) | **425** `BookingInProgress` |
-| New booking (no idempotency row) | **501** until full create path lands |
+| New booking | **201** terminal, **422** payment failed, **409** sold out |
 
 Integration: `npm run test:idempotency-replay`, `npm run test:idempotency-conflict`.
 
