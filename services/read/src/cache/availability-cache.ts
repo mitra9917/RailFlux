@@ -71,11 +71,62 @@ export function createBypassAvailabilityReader(pool: DbPool): AvailabilityReader
   };
 }
 
+type AvailabilityDbLoader = (pool: DbPool, query: AvailabilityQuery) => Promise<Availability>;
+
+async function loadAvailabilityPayload(
+  pool: DbPool,
+  redis: AvailabilityRedis,
+  query: AvailabilityQuery,
+  key: string,
+  loadFromDb: AvailabilityDbLoader,
+): Promise<CachedPayload> {
+  const fromDb = await loadFromDb(pool, query);
+  const observedAt = new Date().toISOString();
+  const payload: CachedPayload = {
+    trainRunId: fromDb.trainRunId,
+    class: fromDb.class,
+    quota: fromDb.quota,
+    displayedSeats: fromDb.displayedSeats,
+    observedAt,
+  };
+
+  try {
+    await redisSetEx(redis, key, JSON.stringify(payload), ttlWithJitterSeconds());
+  } catch {
+    // Best-effort cache populate; response still reflects a miss.
+  }
+
+  return payload;
+}
+
+export type RedisAvailabilityReaderOptions = {
+  loadFromDb?: AvailabilityDbLoader;
+};
+
 /** Cache-aside advisory availability; booking path must not use this reader. */
 export function createRedisAvailabilityReader(
   pool: DbPool,
   redis: AvailabilityRedis,
+  options: RedisAvailabilityReaderOptions = {},
 ): AvailabilityReader {
+  const loadFromDb = options.loadFromDb ?? getAvailability;
+  /** Single-flight per key: concurrent misses share one DB load (FT-009). */
+  const inflightMiss = new Map<string, Promise<CachedPayload>>();
+
+  async function coalescedMissLoad(
+    query: AvailabilityQuery,
+    key: string,
+  ): Promise<CachedPayload> {
+    let pending = inflightMiss.get(key);
+    if (!pending) {
+      pending = loadAvailabilityPayload(pool, redis, query, key, loadFromDb).finally(() => {
+        inflightMiss.delete(key);
+      });
+      inflightMiss.set(key, pending);
+    }
+    return pending;
+  }
+
   return {
     async getAvailability(query: AvailabilityQuery): Promise<Availability> {
       const key = availabilityCacheKey(query);
@@ -89,22 +140,7 @@ export function createRedisAvailabilityReader(
         return getAvailability(pool, query);
       }
 
-      const fromDb = await getAvailability(pool, query);
-      const observedAt = new Date().toISOString();
-      const payload: CachedPayload = {
-        trainRunId: fromDb.trainRunId,
-        class: fromDb.class,
-        quota: fromDb.quota,
-        displayedSeats: fromDb.displayedSeats,
-        observedAt,
-      };
-
-      try {
-        await redisSetEx(redis, key, JSON.stringify(payload), ttlWithJitterSeconds());
-      } catch {
-        // Best-effort cache populate; response still reflects a miss.
-      }
-
+      const payload = await coalescedMissLoad(query, key);
       return withFreshness(payload, 'MISS');
     },
   };
