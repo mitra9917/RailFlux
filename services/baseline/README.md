@@ -98,4 +98,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cacheStatus: BYPASS` on baseline). Unknown run/bucket → **404** `NOT_FOUND`.
 
+### Inventory claim (booking path, M3)
+
+`claimInventorySeats` in `src/services/claim-inventory.ts` performs a single-row optimistic `UPDATE` (`version` + `available_seats`). Zero rows updated → `SOLD_OUT`, `VERSION_CONFLICT`, or `NOT_FOUND`. Integration tests: `npm run test:claim-inventory` (MySQL + fixture).
+
 Booking routes: M2 #14+.
