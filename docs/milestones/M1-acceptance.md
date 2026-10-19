@@ -38,4 +38,4 @@ npm run ci
 
 ## Exit
 
-M1 is complete. Begin **M2** (baseline read path): issue **#10**.
+M1 is complete. **M2** is recorded in [M2-acceptance.md](M2-acceptance.md). Begin **M3** from issue **#19**.

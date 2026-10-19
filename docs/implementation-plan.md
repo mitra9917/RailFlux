@@ -41,7 +41,7 @@ All items in [definition-of-done.md](definition-of-done.md) must be satisfied, w
 | ID | Milestone | Target | Outcome |
 | --- | --- | --- | --- |
 | **M1** | Contracts & repository scaffold | Week 1 | **Done** — [M1 acceptance](milestones/M1-acceptance.md) |
-| **M2** | Baseline read path (local) | Week 1–2 | Search/availability/health on monolith + Docker baseline profile |
+| **M2** | Baseline read path (local) | Week 1–2 | **Done** — [M2 acceptance](milestones/M2-acceptance.md) |
 | **M3** | Baseline booking correctness | Week 2 | Atomic claim, idempotency, payment stub, sync side effects, TC-003–TC-009 |
 | **M4** | Optimized local profile | Week 3 | Read/booking split, Redis, queue, worker, DLQ, parity + TC-002/TC-010 |
 | **M5** | AWS infrastructure & observability | Week 4 | CloudFormation profiles, deploy/teardown, budgets, smoke session |
