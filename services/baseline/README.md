@@ -43,7 +43,7 @@ export SYNTHETIC_JWT_SECRET=dev-only-change-me
 npm run test:tc001
 ```
 
-`npm test` includes the same file but **skips** when MySQL is down so CI unit checks stay green on laptops without a DB.
+TC-001 lives under `tests/integration/` and is **not** part of default `npm test` (no MySQL in the lint job).
 
 | Probe | Meaning |
 | --- | --- |

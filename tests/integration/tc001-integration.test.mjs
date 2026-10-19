@@ -1,13 +1,13 @@
 /**
  * Catalog TC-001: search and availability contract tests against live MySQL + baseline app.
- * Skips when MySQL is unreachable unless TC001_INTEGRATION=1 (CI).
+ * Run via `npm run test:tc001` (CI database-smoke job). Not part of default `npm test`.
  */
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { after, before, describe, test } from 'node:test';
 import { signSyntheticJwt } from '@railflux/shared';
-import { createApp } from '../services/baseline/dist/app.js';
-import { createPool, pingDatabase } from '../services/baseline/dist/db.js';
+import { createApp } from '../../services/baseline/dist/app.js';
+import { createPool, pingDatabase } from '../../services/baseline/dist/db.js';
 import {
   TC001_FROM,
   TC001_JOURNEY_DATE,
@@ -15,7 +15,7 @@ import {
   TC001_TRAIN_RUN_ID,
   TC001_TRAIN_NO,
   TC001_USER_ID,
-} from './helpers/tc001-fixture.mjs';
+} from '../helpers/tc001-fixture.mjs';
 
 const requireMysql = process.env.TC001_INTEGRATION === '1';
 
@@ -55,7 +55,7 @@ async function jsonFetch(port, path, { token, method = 'GET' } = {}) {
 }
 
 describe('TC-001 baseline read APIs (integration)', () => {
-  /** @type {import('../services/baseline/dist/db.js').DbPool | undefined} */
+  /** @type {import('../../services/baseline/dist/db.js').DbPool | undefined} */
   let pool;
   /** @type {import('node:http').Server | undefined} */
   let server;
@@ -94,12 +94,17 @@ describe('TC-001 baseline read APIs (integration)', () => {
     if (pool) await pool.end();
   });
 
+  /** @returns {boolean} false when test was skipped */
   function skipUnlessReady(t) {
-    if (!mysqlAvailable) t.skip('MySQL not available (set TC001_INTEGRATION=1 in CI)');
+    if (!mysqlAvailable) {
+      t.skip('MySQL not available (run npm run test:tc001 with DB up)');
+      return false;
+    }
+    return true;
   }
 
   test('search: valid route returns contract-compliant items and freshness', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({
       from: TC001_FROM,
       to: TC001_TO,
@@ -120,7 +125,7 @@ describe('TC-001 baseline read APIs (integration)', () => {
   });
 
   test('search: invalid query returns 400 VALIDATION_ERROR', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({ from: 'bad', to: TC001_TO, date: TC001_JOURNEY_DATE });
     const { status, body } = await jsonFetch(port, `/v1/search?${q}`, { token });
     assert.equal(status, 400);
@@ -129,7 +134,7 @@ describe('TC-001 baseline read APIs (integration)', () => {
   });
 
   test('search: missing bearer returns 401 UNAUTHORIZED', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({
       from: TC001_FROM,
       to: TC001_TO,
@@ -141,7 +146,7 @@ describe('TC-001 baseline read APIs (integration)', () => {
   });
 
   test('availability: valid bucket returns displayedSeats and BYPASS freshness', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({
       trainRunId: TC001_TRAIN_RUN_ID,
       class: '3A',
@@ -158,7 +163,7 @@ describe('TC-001 baseline read APIs (integration)', () => {
   });
 
   test('availability: invalid class returns 400 VALIDATION_ERROR', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({
       trainRunId: TC001_TRAIN_RUN_ID,
       class: '1A',
@@ -170,7 +175,7 @@ describe('TC-001 baseline read APIs (integration)', () => {
   });
 
   test('availability: unknown train run returns 404 NOT_FOUND', async (t) => {
-    skipUnlessReady(t);
+    if (!skipUnlessReady(t)) return;
     const q = new URLSearchParams({
       trainRunId: '00000000-0000-4000-8000-000000000000',
       class: '3A',
