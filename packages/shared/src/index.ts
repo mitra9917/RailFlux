@@ -3,3 +3,4 @@ export * from './constants.js';
 export * from './errors.js';
 export * from './synthetic-jwt.js';
 export * from './search-query.js';
+export * from './availability-query.js';
