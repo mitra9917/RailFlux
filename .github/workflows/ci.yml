@@ -105,3 +105,6 @@ jobs:
 
       - name: Idempotency replay integration (TC-005)
         run: npm run test:idempotency-replay
+
+      - name: Idempotency conflict and in-flight (TC-006)
+        run: npm run test:idempotency-conflict

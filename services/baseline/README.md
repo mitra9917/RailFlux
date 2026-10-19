@@ -100,7 +100,16 @@ Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cache
 
 ### Idempotency (POST /v1/bookings, M3)
 
-Requires header **`Idempotency-Key`** (16–128 chars). Same key + same body replays stored terminal **`BookingResult`** with **200** (TC-005). New bookings return **501** until the full create path lands. Integration: `npm run test:idempotency-replay`.
+Requires header **`Idempotency-Key`** (16–128 chars).
+
+| Case | HTTP |
+| --- | --- |
+| Same key + same body (terminal stored) | **200** replay (TC-005) |
+| Same key + different body | **409** `IDEMPOTENCY_CONFLICT` (TC-006) |
+| Same key + same body (still processing) | **425** `BookingInProgress` |
+| New booking (no idempotency row) | **501** until full create path lands |
+
+Integration: `npm run test:idempotency-replay`, `npm run test:idempotency-conflict`.
 
 ### Inventory claim (booking path, M3)
 

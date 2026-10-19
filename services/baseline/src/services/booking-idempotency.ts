@@ -1,5 +1,5 @@
-import type { BookingResult } from '@railflux/shared';
-import { RailFluxError } from '@railflux/shared';
+import type { BookingInProgress, BookingInProgressStatus, BookingResult } from '@railflux/shared';
+import { DEFAULT_BOOKING_RETRY_AFTER_MS, RailFluxError } from '@railflux/shared';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import type { DbPool } from '../db.js';
 
@@ -131,6 +131,44 @@ export async function resolveIdempotencyReplay(
 
 export function idempotencyConflictError(): RailFluxError {
   return new RailFluxError('IDEMPOTENCY_CONFLICT', 'Idempotency-Key reused with a different request', 409);
+}
+
+interface BookingStatusRow extends RowDataPacket {
+  status: string;
+}
+
+export async function getBookingInProgressStatus(
+  db: DbExecutor,
+  bookingId: string,
+): Promise<BookingInProgressStatus> {
+  const [rows] = await db.query<BookingStatusRow[]>(
+    `SELECT status FROM bookings WHERE id = ? LIMIT 1`,
+    [bookingId],
+  );
+  const status = rows[0]?.status;
+  if (status === 'PAYMENT_PENDING') return 'PAYMENT_PENDING';
+  return 'RECEIVED';
+}
+
+export function buildBookingInProgressBody(
+  bookingId: string,
+  status: BookingInProgressStatus,
+  retryAfterMs: number = DEFAULT_BOOKING_RETRY_AFTER_MS,
+): BookingInProgress {
+  return { bookingId, status, retryAfterMs };
+}
+
+/** TC-006 / in-flight: 425 when the same idempotent request is still processing. */
+export async function resolveBookingInProgressResponse(
+  db: DbExecutor,
+  idempotencyKeyHash: string,
+): Promise<BookingInProgress | null> {
+  const record = await getIdempotencyRecord(db, idempotencyKeyHash);
+  if (!record || record.status !== IDEMPOTENCY_STATUS_IN_PROGRESS || !record.bookingId) {
+    return null;
+  }
+  const status = await getBookingInProgressStatus(db, record.bookingId);
+  return buildBookingInProgressBody(record.bookingId, status);
 }
 
 export function idempotencyExpiresAt(fromMs: number = Date.now()): Date {
