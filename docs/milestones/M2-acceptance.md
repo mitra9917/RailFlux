@@ -53,4 +53,4 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 ## Exit
 
-M2 is complete. Begin **M3** (baseline booking correctness): issue **#19** (booking state machine) and related M3 issues.
+M2 is complete. **M3** booking correctness: see [M3 acceptance gate](M3-acceptance.md).

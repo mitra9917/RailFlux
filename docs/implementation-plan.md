@@ -42,7 +42,7 @@ All items in [definition-of-done.md](definition-of-done.md) must be satisfied, w
 | --- | --- | --- | --- |
 | **M1** | Contracts & repository scaffold | Week 1 | **Done** — [M1 acceptance](milestones/M1-acceptance.md) |
 | **M2** | Baseline read path (local) | Week 1–2 | **Done** — [M2 acceptance](milestones/M2-acceptance.md) |
-| **M3** | Baseline booking correctness | Week 2 | Atomic claim, idempotency, payment stub, sync side effects, TC-003–TC-009 |
+| **M3** | Baseline booking correctness | Week 2 | **Done** — [M3 acceptance](milestones/M3-acceptance.md) |
 | **M4** | Optimized local profile | Week 3 | Read/booking split, Redis, queue, worker, DLQ, parity + TC-002/TC-010 |
 | **M5** | AWS infrastructure & observability | Week 4 | CloudFormation profiles, deploy/teardown, budgets, smoke session |
 | **M6** | Experiment engine & load tests | Week 5 (early) | k6 workloads, controller CLI, manifests, artifact export, preflight |
@@ -132,8 +132,8 @@ Standard GitHub labels (`enhancement`, `documentation`, `test`) are applied wher
 | P4 | Side effects | Baseline synchronous outbox handlers |
 | P5 | Status API | GET booking, timeout-after-commit path |
 | P6 | Reconciliation | Post-run SQL runner integration |
-| P7 | Tests | Concurrency suite + catalog functional tests |
-| P8 | Gate | M3 acceptance |
+| P7 | Tests | TC-003–TC-009 automation, TC-007 contention |
+| P8 | Gate | M3 acceptance (`npm run gate:m3`) |
 
 ---
 
