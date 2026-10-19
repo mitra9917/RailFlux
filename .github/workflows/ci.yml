@@ -114,3 +114,6 @@ jobs:
 
       - name: Baseline booking outbox (M3 #25)
         run: npm run test:booking-outbox
+
+      - name: GET booking status after commit (TC-009)
+        run: npm run test:get-booking

@@ -4,6 +4,7 @@ import {
   RailFluxError,
   hashBookingRequest,
   hashIdempotencyKey,
+  parseBookingIdParam,
   parseCreateBookingBody,
   parseIdempotencyKeyHeader,
 } from '@railflux/shared';
@@ -13,9 +14,27 @@ import {
   resolveBookingInProgressResponse,
   resolveIdempotencyReplay,
 } from '../services/booking-idempotency.js';
+import { getBookingResult } from '../services/get-booking.js';
 
 export function createBookingsRouter(pool: DbPool): Router {
   const router = Router();
+
+  router.get('/bookings/:bookingId', async (req, res, next) => {
+    try {
+      const bookingId = parseBookingIdParam(req.params.bookingId);
+      const result = await getBookingResult(pool, bookingId);
+      if (!result) {
+        throw new RailFluxError('NOT_FOUND', 'Booking not found', 404);
+      }
+      res.status(200).json(result);
+    } catch (err) {
+      if (err instanceof RailFluxError) {
+        res.status(err.httpStatus).json(err.toJSON());
+        return;
+      }
+      next(err);
+    }
+  });
 
   router.post('/bookings', async (req, res, next) => {
     try {
