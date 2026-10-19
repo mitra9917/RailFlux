@@ -11,3 +11,4 @@ export * from './idempotency.js';
 export * from './create-booking.js';
 export * from './payment-stub-config.js';
 export * from './payment-stub.js';
+export * from './booking-outbox.js';

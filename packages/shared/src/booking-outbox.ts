@@ -1,0 +1,38 @@
+export const BOOKING_CONFIRMED_EVENT_TYPE = 'BOOKING_CONFIRMED' as const;
+export const BOOKING_AGGREGATE_TYPE = 'booking' as const;
+export const BASELINE_BOOKING_CONFIRMED_HANDLER = 'SYNTHETIC_NOTIFICATION' as const;
+
+export type BookingConfirmedSideEffectPayload = {
+  notificationTarget: string;
+};
+
+/** Queue-shaped message persisted in `outbox_events.payload` (no PII beyond synthetic user id). */
+export type BookingConfirmedOutboxMessage = {
+  schemaVersion: 1;
+  eventId: string;
+  eventType: typeof BOOKING_CONFIRMED_EVENT_TYPE;
+  bookingId: string;
+  runId: string;
+  occurredAt: string;
+  payload: BookingConfirmedSideEffectPayload;
+};
+
+export function buildBookingConfirmedOutboxMessage(input: {
+  eventId: string;
+  bookingId: string;
+  runId: string;
+  userId: string;
+  occurredAt: Date;
+}): BookingConfirmedOutboxMessage {
+  return {
+    schemaVersion: 1,
+    eventId: input.eventId,
+    eventType: BOOKING_CONFIRMED_EVENT_TYPE,
+    bookingId: input.bookingId,
+    runId: input.runId,
+    occurredAt: input.occurredAt.toISOString(),
+    payload: {
+      notificationTarget: input.userId,
+    },
+  };
+}

@@ -111,3 +111,6 @@ jobs:
 
       - name: Payment failure inventory release (TC-008)
         run: npm run test:payment-failure
+
+      - name: Baseline booking outbox (M3 #25)
+        run: npm run test:booking-outbox
