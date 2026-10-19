@@ -25,6 +25,10 @@
       "types": "./dist/routes/health.d.ts",
       "default": "./dist/routes/health.js"
     },
+    "./routes/bookings.js": {
+      "types": "./dist/routes/bookings.d.ts",
+      "default": "./dist/routes/bookings.js"
+    },
     "./middleware/synthetic-jwt.js": {
       "types": "./dist/middleware/synthetic-jwt.d.ts",
       "default": "./dist/middleware/synthetic-jwt.js"

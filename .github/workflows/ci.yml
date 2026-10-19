@@ -106,6 +106,12 @@ jobs:
           SYNTHETIC_JWT_SECRET: ci-read-tc001-secret
         run: npm run test:read-tc001
 
+      - name: Edge routing (OpenAPI /v1 split)
+        env:
+          EDGE_ROUTING_INTEGRATION: "1"
+          SYNTHETIC_JWT_SECRET: edge-routing-test-secret
+        run: npm run test:edge-routing
+
       - name: Atomic inventory claim integration (TC-004)
         run: npm run test:claim-inventory
 

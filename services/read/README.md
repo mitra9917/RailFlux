@@ -1,8 +1,8 @@
 # Read service (optimized profile)
 
-Independent **`GET /v1/search`** and **`GET /v1/availability`** (OpenAPI parity with baseline; cache-aside lands in M4 #32).
+Independent **`GET /v1/search`** and **`GET /v1/availability`** (OpenAPI parity with baseline; Redis cache-aside is M4 TC-002).
 
-Bookings are **not** mounted here — route `/v1/bookings` to the booking service at the edge (M4 #32).
+Bookings are **not** mounted here — route `/v1/bookings` to the booking service at the edge (`@railflux/edge`, M4 #32).
 
 ## Run locally
 
