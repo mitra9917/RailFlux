@@ -1,0 +1,22 @@
+{
+  "name": "@railflux/edge",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local edge router: unified OpenAPI /v1 surface (M4)",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@railflux/shared": "0.0.0",
+    "dotenv": "^18.0.8",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.5"
+  }
+}
