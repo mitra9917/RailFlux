@@ -111,6 +111,10 @@ Requires header **`Idempotency-Key`** (16–128 chars).
 
 Integration: `npm run test:idempotency-replay`, `npm run test:idempotency-conflict`.
 
+### Payment stub (M3)
+
+Deterministic authorize outcomes from `experiment/fixtures/manifest.yaml` (`payment_sequence`, `payment_stub.*`). Use `derivePaymentStubOutcome` / `authorizePayment` in `@railflux/shared` and `services/baseline/src/services/payment-stub.ts`. Call `resetPaymentStubRun()` on experiment reset. Never log `paymentToken`.
+
 ### Inventory claim (booking path, M3)
 
 `claimInventorySeats` in `src/services/claim-inventory.ts` performs a single-row optimistic `UPDATE` (`version` + `available_seats`). Zero rows updated → `SOLD_OUT`, `VERSION_CONFLICT`, or `NOT_FOUND`. Integration tests: `npm run test:claim-inventory` (MySQL + fixture).
