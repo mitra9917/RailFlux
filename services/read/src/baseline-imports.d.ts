@@ -43,6 +43,12 @@ declare module '@railflux/baseline/middleware/synthetic-jwt.js' {
   export function createSyntheticJwtMiddleware(secret: string): RequestHandler;
 }
 
+declare module '@railflux/baseline/services/get-availability.js' {
+  import type { Availability, AvailabilityQuery } from '@railflux/shared';
+  import type { DbPool } from '@railflux/baseline/db.js';
+  export function getAvailability(pool: DbPool, query: AvailabilityQuery): Promise<Availability>;
+}
+
 declare module '@railflux/baseline/middleware/request-logging.js' {
   import type { RequestHandler } from 'express';
   export type RequestLogArchitecture = 'baseline' | 'optimized';
