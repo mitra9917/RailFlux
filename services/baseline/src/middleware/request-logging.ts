@@ -9,8 +9,10 @@ import { operationFromPath } from '../logging/http-operation.js';
 
 export type RequestLogWriter = (entry: Record<string, unknown>) => void;
 
+export type RequestLogArchitecture = 'baseline' | 'optimized';
+
 export function createRequestLoggingMiddleware(
-  architecture: 'baseline',
+  architecture: RequestLogArchitecture,
   write: RequestLogWriter = (entry) => console.log(JSON.stringify(entry)),
 ): RequestHandler {
   return (req, res, next) => {

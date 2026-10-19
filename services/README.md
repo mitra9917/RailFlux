@@ -5,7 +5,7 @@ Node.js + TypeScript + Express applications.
 | Path | Role |
 | --- | --- |
 | `baseline/` | Monolith: search, availability, booking, sync side effects (M2–M3) |
-| `read/` | Optimized read path: search + availability with cache (M4) |
+| `read/` | Optimized read path: search + availability on port **3001** (`npm run dev -w @railflux/read`) |
 | `booking/` | Optimized write path: bookings + outbox publish (M4) |
 | `worker/` | SQS/ElasticMQ consumer for side effects (M4) |
 

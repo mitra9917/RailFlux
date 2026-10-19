@@ -4,6 +4,36 @@
   "private": true,
   "description": "Baseline monolith: search, availability, booking (M2+)",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./db.js": {
+      "types": "./dist/db.d.ts",
+      "default": "./dist/db.js"
+    },
+    "./routes/search.js": {
+      "types": "./dist/routes/search.d.ts",
+      "default": "./dist/routes/search.js"
+    },
+    "./routes/availability.js": {
+      "types": "./dist/routes/availability.d.ts",
+      "default": "./dist/routes/availability.js"
+    },
+    "./routes/health.js": {
+      "types": "./dist/routes/health.d.ts",
+      "default": "./dist/routes/health.js"
+    },
+    "./middleware/synthetic-jwt.js": {
+      "types": "./dist/middleware/synthetic-jwt.d.ts",
+      "default": "./dist/middleware/synthetic-jwt.js"
+    },
+    "./middleware/request-logging.js": {
+      "types": "./dist/middleware/request-logging.d.ts",
+      "default": "./dist/middleware/request-logging.js"
+    }
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
