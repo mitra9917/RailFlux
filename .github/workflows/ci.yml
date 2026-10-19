@@ -108,3 +108,6 @@ jobs:
 
       - name: Idempotency conflict and in-flight (TC-006)
         run: npm run test:idempotency-conflict
+
+      - name: Payment failure inventory release (TC-008)
+        run: npm run test:payment-failure

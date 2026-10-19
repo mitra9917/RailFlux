@@ -119,4 +119,8 @@ Deterministic authorize outcomes from `experiment/fixtures/manifest.yaml` (`paym
 
 `claimInventorySeats` in `src/services/claim-inventory.ts` performs a single-row optimistic `UPDATE` (`version` + `available_seats`). Zero rows updated → `SOLD_OUT`, `VERSION_CONFLICT`, or `NOT_FOUND`. Integration tests: `npm run test:claim-inventory` (MySQL + fixture).
 
+### Payment failure release (M3)
+
+When authorization fails, `finalizeBookingAfterPaymentFailure` in `src/services/payment-failure-release.ts` moves the booking to terminal `FAILED`, marks the payment `FAILED`, and calls `releaseInventorySeats` once (optimistic version; stale retry → no double release). Integration: `npm run test:payment-failure` (TC-008).
+
 Booking routes: M2 #14+.
