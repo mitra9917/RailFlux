@@ -5,6 +5,8 @@
 | `validate-openapi.sh` | Validate `docs/design/api-spec.yaml` (also `npm run validate:openapi`) |
 | `npm run ci` | Full local CI (see `.github/workflows/ci.yml`) |
 | `bootstrap_github_issues.py` | Idempotently recreate GitHub labels, milestones, and tracked issues |
+| `m1-gate.sh` | M1 acceptance (`npm run ci`) |
+| `m2-gate.sh` | M2 acceptance (`npm run gate:m2`) |
 
 Database fixture (under `database/scripts/`):
 
@@ -15,4 +17,3 @@ Database fixture (under `database/scripts/`):
 | `update-manifest-checksums.mjs` | Regenerate `checksums` in `experiment/fixtures/manifest.yaml` |
 
 Run from repository root unless noted.
-| `m1-gate.sh` | M1 acceptance (npm run ci) |
