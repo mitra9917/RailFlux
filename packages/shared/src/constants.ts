@@ -1,5 +1,6 @@
 /** HTTP header names from OpenAPI v1 parameters. */
 export const HEADER_RUN_ID = 'X-Run-Id';
+export const HEADER_REQUEST_ID = 'X-Request-Id';
 export const HEADER_IDEMPOTENCY_KEY = 'Idempotency-Key';
 export const HEADER_AUTHORIZATION = 'Authorization';
 

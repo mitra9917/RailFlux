@@ -36,6 +36,10 @@ npm run health:check
 
 Compose / ALB: see [infrastructure/compose/README.md](../../infrastructure/compose/README.md).
 
+## Structured logs
+
+Each HTTP request logs one JSON line (`event: http_request`) with `request_id`, optional `run_id` from header `X-Run-Id`, and `operation`. See [observability.md](../../docs/operations/observability.md).
+
 ## Scripts
 
 | Command | Purpose |
