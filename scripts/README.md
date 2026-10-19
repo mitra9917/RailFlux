@@ -7,6 +7,7 @@
 | `bootstrap_github_issues.py` | Idempotently recreate GitHub labels, milestones, and tracked issues |
 | `m1-gate.sh` | M1 acceptance (`npm run ci`) |
 | `m2-gate.sh` | M2 acceptance (`npm run gate:m2`) |
+| `m3-gate.sh` | M3 booking correctness (`npm run gate:m3`) |
 
 Database fixture (under `database/scripts/`):
 

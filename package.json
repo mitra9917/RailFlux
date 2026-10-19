@@ -34,6 +34,7 @@
     "lint": "npm run validate:openapi && npm run verify:fixture && npm run typecheck:shared",
     "ci": "npm run lint && npm run build:shared && npm run typecheck:baseline && npm test",
     "gate:m2": "./scripts/m2-gate.sh",
+    "gate:m3": "./scripts/m3-gate.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
     "db:bootstrap": "npm run db:up && npm run db:load"

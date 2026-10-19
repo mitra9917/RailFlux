@@ -102,7 +102,7 @@ Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cache
 
 Requires JWT, **`Idempotency-Key`**, and body per OpenAPI `CreateBooking`. Optional **`X-Run-Id`**. Success → **201** `CONFIRMED` with simulated PNR; sold out → **409**; payment stub failure → **422** `FAILED`.
 
-Integration: `npm run test:booking-create`; concurrent last seat: `npm run test:tc007-contention`; full M3 catalog bundle: `npm run test:m3-tc003-009` (set `MYSQL_PORT=3307` for Compose MySQL).
+Integration: `npm run test:booking-create`; concurrent last seat: `npm run test:tc007-contention`; full M3 catalog bundle: `npm run test:m3-tc003-009` (set `MYSQL_PORT=3307` for Compose MySQL). Milestone gate: `npm run gate:m3`.
 
 ### GET /v1/bookings/{bookingId} (M3)
 
