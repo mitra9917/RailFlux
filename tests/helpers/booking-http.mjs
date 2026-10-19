@@ -37,6 +37,12 @@ export async function postBooking(baseUrl, token, idempotencyKey, body, runId) {
     headers,
     body: JSON.stringify(body),
   });
-  const json = await res.json();
-  return { status: res.status, body: json };
+  const text = await res.text();
+  let parsed;
+  try {
+    parsed = text ? JSON.parse(text) : {};
+  } catch {
+    parsed = { raw: text };
+  }
+  return { status: res.status, body: parsed };
 }

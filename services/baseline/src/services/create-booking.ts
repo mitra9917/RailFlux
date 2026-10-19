@@ -63,7 +63,13 @@ async function insertPassengers(
   }
 }
 
-export async function createBooking(
+function isDeadlockError(err: unknown): boolean {
+  return (err as { code?: string }).code === 'ER_LOCK_DEADLOCK';
+}
+
+const CREATE_BOOKING_DEADLOCK_RETRIES = 8;
+
+async function createBookingAttempt(
   pool: DbPool,
   input: CreateBookingInput,
 ): Promise<CreateBookingHttpResult> {
@@ -74,6 +80,15 @@ export async function createBooking(
 
   try {
     await conn.beginTransaction();
+
+    const [invRows] = await conn.query<InventoryRow[]>(
+      `SELECT version FROM seat_inventory WHERE id = ? FOR UPDATE`,
+      [input.body.inventoryId],
+    );
+    const inv = invRows[0];
+    if (!inv) {
+      throw new RailFluxError('NOT_FOUND', 'Inventory bucket not found', 404);
+    }
 
     try {
       await insertIdempotencyInProgress(conn, {
@@ -107,15 +122,6 @@ export async function createBooking(
     await attachIdempotencyBookingId(conn, input.idempotencyKeyHash, bookingId);
     await insertPassengers(conn, bookingId, input.body);
 
-    const [invRows] = await conn.query<InventoryRow[]>(
-      `SELECT version FROM seat_inventory WHERE id = ? FOR UPDATE`,
-      [input.body.inventoryId],
-    );
-    const inv = invRows[0];
-    if (!inv) {
-      throw new RailFluxError('NOT_FOUND', 'Inventory bucket not found', 404);
-    }
-
     const claim = await claimInventorySeats(conn, {
       inventoryId: input.body.inventoryId,
       seatCount,
@@ -147,8 +153,10 @@ export async function createBooking(
     await conn.query(`UPDATE bookings SET status = 'PAYMENT_PENDING' WHERE id = ?`, [bookingId]);
 
     const paymentId = randomUUID();
-    const sequence = getPaymentStubRunSequence();
-    const outcome = sequence.nextOutcome();
+    const outcome =
+      process.env.PAYMENT_STUB_FORCE_SUCCESS === '1'
+        ? { success: true, delayMs: 0, stubSequence: 'test:forced-success' }
+        : getPaymentStubRunSequence().nextOutcome();
     if (!input.skipPaymentDelay && outcome.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, outcome.delayMs));
     }
@@ -231,4 +239,21 @@ export async function createBooking(
   }
 
   throw new RailFluxError('INTERNAL_ERROR', 'Unhandled booking outcome', 500);
+}
+
+export async function createBooking(
+  pool: DbPool,
+  input: CreateBookingInput,
+): Promise<CreateBookingHttpResult> {
+  for (let attempt = 0; attempt < CREATE_BOOKING_DEADLOCK_RETRIES; attempt += 1) {
+    try {
+      return await createBookingAttempt(pool, input);
+    } catch (err) {
+      if (isDeadlockError(err) && attempt < CREATE_BOOKING_DEADLOCK_RETRIES - 1) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new RailFluxError('INTERNAL_ERROR', 'Booking failed after deadlock retries', 503);
 }

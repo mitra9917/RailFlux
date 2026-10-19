@@ -35,11 +35,11 @@ This matrix links **HTTP API v1.0.0** ([OpenAPI](../design/api-spec.yaml), [ADR-
 | TC-004 | `npm run test:claim-inventory`, `test:booking-create` | `claim-inventory.test.mjs`, `booking-create.test.mjs` |
 | TC-005 | `npm run test:idempotency-replay` | `idempotency-replay.test.mjs` |
 | TC-006 | `npm run test:idempotency-conflict` | `idempotency-conflict.test.mjs` |
-| TC-007 | *(issue #29)* | Concurrent last-seat suite (follow-on) |
+| TC-007 | `npm run test:tc007-contention` | `tests/integration/tc007-contention.test.mjs` |
 | TC-008 | `npm run test:payment-failure`, `test:booking-create` | `payment-failure.test.mjs`, `booking-create.test.mjs` |
 | TC-009 | `npm run test:get-booking`, `test:booking-create` | `get-booking.test.mjs`, `booking-create.test.mjs` |
 
-Umbrella: `npm run test:m3-tc003-009` (TC-007 excluded until #29).
+Umbrella: `npm run test:m3-tc003-009` (includes TC-007).
 
 ### Optimized-only async path (not separate OpenAPI operations)
 
