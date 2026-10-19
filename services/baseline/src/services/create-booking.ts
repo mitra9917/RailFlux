@@ -14,10 +14,16 @@ import {
   insertIdempotencyInProgress,
   attachIdempotencyBookingId,
 } from './booking-idempotency.js';
+import { getOutboxDeliveryMode } from '../outbox-delivery.js';
 import {
   insertBookingConfirmedOutboxEvent,
   processBookingConfirmedOutboxSynchronously,
 } from './booking-outbox.js';
+import {
+  createSideEffectsSqsClient,
+  loadSideEffectsSqsConfig,
+  publishBookingConfirmedOutboxToSqs,
+} from './outbox-sqs-publisher.js';
 import { finalizeBookingAfterPaymentFailure } from './payment-failure-release.js';
 import { getPaymentStubRunSequence } from './payment-stub.js';
 
@@ -220,19 +226,36 @@ async function createBookingAttempt(
   }
 
   if (outboxEventId && successTerminal) {
-    const syncConn = await pool.getConnection();
-    try {
-      await syncConn.beginTransaction();
-      await processBookingConfirmedOutboxSynchronously(syncConn, {
-        eventId: outboxEventId,
-        runId: input.runId,
-      });
-      await syncConn.commit();
-    } catch (err) {
-      await syncConn.rollback();
-      throw err;
-    } finally {
-      syncConn.release();
+    if (getOutboxDeliveryMode() === 'sqs') {
+      const sqsConfig = loadSideEffectsSqsConfig();
+      const sqsClient = createSideEffectsSqsClient(sqsConfig);
+      try {
+        await publishBookingConfirmedOutboxToSqs(pool, { eventId: outboxEventId }, sqsClient, sqsConfig.queueUrl);
+      } catch (err) {
+        console.error(
+          JSON.stringify({
+            event: 'outbox_sqs_publish_failed',
+            eventId: outboxEventId,
+            runId: input.runId,
+            message: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
+    } else {
+      const syncConn = await pool.getConnection();
+      try {
+        await syncConn.beginTransaction();
+        await processBookingConfirmedOutboxSynchronously(syncConn, {
+          eventId: outboxEventId,
+          runId: input.runId,
+        });
+        await syncConn.commit();
+      } catch (err) {
+        await syncConn.rollback();
+        throw err;
+      } finally {
+        syncConn.release();
+      }
     }
 
     return { kind: 'created', status: 201, body: successTerminal };

@@ -1,6 +1,8 @@
 export const BOOKING_CONFIRMED_EVENT_TYPE = 'BOOKING_CONFIRMED' as const;
 export const BOOKING_AGGREGATE_TYPE = 'booking' as const;
 export const BASELINE_BOOKING_CONFIRMED_HANDLER = 'SYNTHETIC_NOTIFICATION' as const;
+/** SQS / ElasticMQ side-effects queue name (cache-and-queue design). */
+export const SIDE_EFFECTS_QUEUE_NAME = 'railflux-side-effects' as const;
 
 export type BookingConfirmedSideEffectPayload = {
   notificationTarget: string;
