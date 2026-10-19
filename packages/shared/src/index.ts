@@ -9,3 +9,5 @@ export * from './run-id.js';
 export * from './booking-state-machine.js';
 export * from './idempotency.js';
 export * from './create-booking.js';
+export * from './payment-stub-config.js';
+export * from './payment-stub.js';
