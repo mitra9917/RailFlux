@@ -117,3 +117,8 @@ jobs:
 
       - name: GET booking status after commit (TC-009)
         run: npm run test:get-booking
+
+      - name: Post-run correctness SQL (M3 #27)
+        env:
+          RUN_ID: ci-correctness-smoke
+        run: node database/scripts/run-correctness.mjs --run-id "$RUN_ID"

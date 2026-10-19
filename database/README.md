@@ -8,7 +8,7 @@ MySQL 8 schema and experiment data lifecycle.
 | `seeds/` | Deterministic fixture load aligned with `experiment/fixtures/manifest.yaml` |
 | `scripts/` | Migrate, seed, reset helpers used locally and in runbooks |
 
-Post-run checks: `experiment/correctness.sql` (invoked by experiment controller, M3+).
+Post-run checks: `experiment/correctness.sql` via `npm run run:correctness -- --run-id <run-id>` (or `./database/scripts/run-correctness.sh --run-id <run-id>`). Exits **0** when all invariants pass, **1** when any check returns violations (JSON on stdout).
 
 ## Migrations
 
