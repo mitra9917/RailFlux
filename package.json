@@ -17,7 +17,7 @@
     "test": "npm run build:shared && npm run build:baseline && node --test tests/*.test.mjs",
     "test:tc001": "npm run build:shared && npm run build:baseline && TC001_INTEGRATION=1 node --test tests/integration/tc001-integration.test.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
-    "compose:baseline": "docker compose -f infrastructure/compose/docker-compose.yml --profile baseline up -d --build",
+    "compose:baseline": "./scripts/compose-baseline-up.sh",
     "dev:stack": "./scripts/dev-stack.sh",
     "mint:jwt": "node scripts/mint-synthetic-jwt.mjs",
     "lint": "npm run validate:openapi && npm run verify:fixture && npm run typecheck:shared",

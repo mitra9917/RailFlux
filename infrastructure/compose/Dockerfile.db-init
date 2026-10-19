@@ -1,0 +1,14 @@
+FROM node:20-bookworm-slim
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends default-mysql-client ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /repo
+COPY database/migrations ./database/migrations
+COPY database/scripts ./database/scripts
+COPY experiment/fixtures ./experiment/fixtures
+ENV MYSQL_HOST=mysql \
+    MYSQL_PORT=3306 \
+    MYSQL_USER=railflux \
+    MYSQL_PASSWORD=railflux \
+    MYSQL_DATABASE=railflux
+ENTRYPOINT ["bash", "database/scripts/load-fixture.sh"]
