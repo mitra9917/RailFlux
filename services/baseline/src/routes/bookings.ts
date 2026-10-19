@@ -14,7 +14,10 @@ import {
   resolveBookingInProgressResponse,
   resolveIdempotencyReplay,
 } from '../services/booking-idempotency.js';
+import { createBooking } from '../services/create-booking.js';
 import { getBookingResult } from '../services/get-booking.js';
+
+const DEFAULT_RUN_ID = 'baseline-local';
 
 export function createBookingsRouter(pool: DbPool): Router {
   const router = Router();
@@ -68,11 +71,37 @@ export function createBookingsRouter(pool: DbPool): Router {
         return;
       }
 
-      throw new RailFluxError(
-        'INTERNAL_ERROR',
-        'Booking creation is not implemented yet',
-        501,
-      );
+      const authUserId = req.syntheticAuth?.userId;
+      if (!authUserId || authUserId !== body.userId) {
+        throw new RailFluxError('UNAUTHORIZED', 'Token subject does not match userId', 401);
+      }
+
+      const runId = req.runId ?? DEFAULT_RUN_ID;
+      const created = await createBooking(pool, {
+        runId,
+        idempotencyKeyHash,
+        requestHash,
+        body,
+        skipPaymentDelay: process.env.NODE_ENV === 'test',
+      });
+
+      if (created.kind === 'in_progress') {
+        const inProgress = await resolveBookingInProgressResponse(pool, idempotencyKeyHash);
+        if (!inProgress) {
+          throw new RailFluxError('INTERNAL_ERROR', 'Booking in progress but not linked', 503);
+        }
+        res.status(425).json(inProgress);
+        return;
+      }
+      if (created.kind === 'sold_out') {
+        res.status(409).json(created.error.toJSON());
+        return;
+      }
+      if (created.kind === 'payment_failed') {
+        res.status(422).json(created.body);
+        return;
+      }
+      res.status(created.status).json(created.body);
     } catch (err) {
       if (err instanceof RailFluxError) {
         res.status(err.httpStatus).json(err.toJSON());

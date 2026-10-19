@@ -27,6 +27,20 @@ This matrix links **HTTP API v1.0.0** ([OpenAPI](../design/api-spec.yaml), [ADR-
 | Error contract (`ErrorResponse`, `BookingResult.errorCode`) | [api-spec.yaml](../design/api-spec.yaml) | TC-001, TC-004, TC-006, TC-008 | Assert expected HTTP status + body codes in integration tests |
 | Post-run invariants | [data-consistency.md](design/data-consistency.md), [correctness.sql](../experiment/correctness.sql) | TC-003–TC-010, Run acceptance | Any reconciliation failure invalidates the run |
 
+### Baseline automated catalog tests (M3 #28)
+
+| Catalog ID | npm script | Integration test file |
+| --- | --- | --- |
+| TC-003 | `npm run test:booking-create` | `tests/integration/booking-create.test.mjs` |
+| TC-004 | `npm run test:claim-inventory`, `test:booking-create` | `claim-inventory.test.mjs`, `booking-create.test.mjs` |
+| TC-005 | `npm run test:idempotency-replay` | `idempotency-replay.test.mjs` |
+| TC-006 | `npm run test:idempotency-conflict` | `idempotency-conflict.test.mjs` |
+| TC-007 | *(issue #29)* | Concurrent last-seat suite (follow-on) |
+| TC-008 | `npm run test:payment-failure`, `test:booking-create` | `payment-failure.test.mjs`, `booking-create.test.mjs` |
+| TC-009 | `npm run test:get-booking`, `test:booking-create` | `get-booking.test.mjs`, `booking-create.test.mjs` |
+
+Umbrella: `npm run test:m3-tc003-009` (TC-007 excluded until #29).
+
 ### Optimized-only async path (not separate OpenAPI operations)
 
 Side effects are triggered by `createBooking` but validated via worker/queue behavior:
