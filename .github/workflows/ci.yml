@@ -100,6 +100,12 @@ jobs:
           SYNTHETIC_JWT_SECRET: ci-tc001-integration-secret
         run: npm run test:tc001
 
+      - name: TC-001 read service (search + availability)
+        env:
+          READ_TC001_INTEGRATION: "1"
+          SYNTHETIC_JWT_SECRET: ci-read-tc001-secret
+        run: npm run test:read-tc001
+
       - name: Atomic inventory claim integration (TC-004)
         run: npm run test:claim-inventory
 
