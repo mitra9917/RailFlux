@@ -46,7 +46,12 @@ jobs:
       MYSQL_PWD: railflux
       MYSQL_DATABASE: railflux
       REDIS_URL: redis://127.0.0.1:6379
+      SQS_ENDPOINT: http://127.0.0.1:9324
     services:
+      elasticmq:
+        image: softwaremill/elasticmq-native:latest
+        ports:
+          - 9324:9324
       redis:
         image: redis:7
         ports:
@@ -142,6 +147,11 @@ jobs:
 
       - name: Baseline booking outbox (M3 #25)
         run: npm run test:booking-outbox
+
+      - name: Outbox publish to ElasticMQ (M4 #35)
+        env:
+          OUTBOX_SQS_INTEGRATION: "1"
+        run: npm run test:outbox-sqs
 
       - name: GET booking status after commit (TC-009)
         run: npm run test:get-booking

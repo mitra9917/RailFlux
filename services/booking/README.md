@@ -15,4 +15,6 @@ npm run dev -w @railflux/booking
 
 Default port **3002** (read service **3001**, edge **3000** when using the optimized stack).
 
-Integration: `npm run test:edge-routing` (MySQL + fixture; set `MYSQL_PORT=3307` for Compose).
+With **`OUTBOX_DELIVERY=sqs`** (see `.env.example`), confirmed bookings publish `BOOKING_CONFIRMED` to ElasticMQ/SQS after commit (M4 #35). Baseline monolith keeps **`OUTBOX_DELIVERY=sync`**.
+
+Integration: `npm run test:edge-routing`, `npm run test:outbox-sqs` (MySQL + ElasticMQ; `MYSQL_PORT=3307` for Compose).
