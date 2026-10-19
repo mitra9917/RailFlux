@@ -10,6 +10,7 @@ import {
 import type { DbPool } from '../db.js';
 import {
   idempotencyConflictError,
+  resolveBookingInProgressResponse,
   resolveIdempotencyReplay,
 } from '../services/booking-idempotency.js';
 
@@ -33,6 +34,18 @@ export function createBookingsRouter(pool: DbPool): Router {
       }
       if (resolved.type === 'replay') {
         res.status(200).json(resolved.body);
+        return;
+      }
+      if (resolved.type === 'in_progress') {
+        const inProgress = await resolveBookingInProgressResponse(pool, idempotencyKeyHash);
+        if (!inProgress) {
+          throw new RailFluxError(
+            'INTERNAL_ERROR',
+            'Idempotency record in progress but booking not linked',
+            503,
+          );
+        }
+        res.status(425).json(inProgress);
         return;
       }
 
