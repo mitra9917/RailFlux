@@ -29,6 +29,10 @@
       "types": "./dist/routes/bookings.d.ts",
       "default": "./dist/routes/bookings.js"
     },
+    "./services/get-availability.js": {
+      "types": "./dist/services/get-availability.d.ts",
+      "default": "./dist/services/get-availability.js"
+    },
     "./middleware/synthetic-jwt.js": {
       "types": "./dist/middleware/synthetic-jwt.d.ts",
       "default": "./dist/middleware/synthetic-jwt.js"

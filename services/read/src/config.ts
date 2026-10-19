@@ -3,6 +3,8 @@ export type ReadServiceConfig = {
   port: number;
   profile: 'optimized';
   syntheticJwtSecret: string;
+  /** When set, availability uses Redis cache-aside; omit for BYPASS-only reads. */
+  redisUrl?: string;
   mysql: {
     host: string;
     port: number;
@@ -23,6 +25,7 @@ export function loadReadConfig(env: NodeJS.ProcessEnv = process.env): ReadServic
     port: Number(env.PORT ?? '3001'),
     profile: 'optimized',
     syntheticJwtSecret: required('SYNTHETIC_JWT_SECRET', env.SYNTHETIC_JWT_SECRET),
+    redisUrl: env.REDIS_URL?.trim() || undefined,
     mysql: {
       host: env.MYSQL_HOST ?? '127.0.0.1',
       port: Number(env.MYSQL_PORT ?? '3306'),

@@ -2,6 +2,7 @@ import './load-env.js';
 import { createPool, pingDatabase } from '@railflux/baseline/db.js';
 import { createReadApp } from './app.js';
 import { loadReadConfig } from './config.js';
+import { connectAvailabilityCache } from './redis-connect.js';
 
 async function main() {
   const config = loadReadConfig();
@@ -12,7 +13,8 @@ async function main() {
     syntheticJwtSecret: config.syntheticJwtSecret,
     mysql: config.mysql,
   });
-  const app = createReadApp(config, pool);
+  const redisConn = await connectAvailabilityCache(pool, config.redisUrl);
+  const app = createReadApp(config, pool, { availabilityReader: redisConn.reader });
 
   const server = app.listen(config.port, () => {
     console.log(
@@ -40,9 +42,14 @@ async function main() {
     console.log(JSON.stringify({ event: 'mysql_connected', service: 'read' }));
   }
 
+  if (redisConn.isOpen) {
+    console.log(JSON.stringify({ event: 'redis_connected', service: 'read' }));
+  }
+
   const shutdown = async (signal: string) => {
     console.log(JSON.stringify({ event: 'shutdown', service: 'read', signal }));
     server.close();
+    await redisConn.close();
     await pool.end();
     process.exit(0);
   };

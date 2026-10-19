@@ -45,7 +45,17 @@ jobs:
       MYSQL_PASSWORD: railflux
       MYSQL_PWD: railflux
       MYSQL_DATABASE: railflux
+      REDIS_URL: redis://127.0.0.1:6379
     services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
       mysql:
         image: mysql:8.0
         env:
@@ -105,6 +115,12 @@ jobs:
           READ_TC001_INTEGRATION: "1"
           SYNTHETIC_JWT_SECRET: ci-read-tc001-secret
         run: npm run test:read-tc001
+
+      - name: TC-002 availability cache (read + Redis)
+        env:
+          TC002_INTEGRATION: "1"
+          SYNTHETIC_JWT_SECRET: ci-tc002-cache-secret
+        run: npm run test:tc002-cache
 
       - name: Edge routing (OpenAPI /v1 split)
         env:
