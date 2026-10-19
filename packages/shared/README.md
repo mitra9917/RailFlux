@@ -24,3 +24,5 @@ import { HEADER_IDEMPOTENCY_KEY, RailFluxError } from '@railflux/shared';
 ```
 
 Types are **hand-maintained** to match the frozen contract. When `api-spec.yaml` changes, update `src/api-types.ts` and bump per ADR-011.
+
+Booking lifecycle helpers (`booking-state-machine.ts`) enforce [data-consistency.md](../../docs/design/data-consistency.md) transitions for baseline and optimized profiles.
