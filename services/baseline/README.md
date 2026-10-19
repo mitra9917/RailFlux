@@ -98,6 +98,10 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 Returns `displayedSeats` from `seat_inventory` plus advisory `freshness` (`cacheStatus: BYPASS` on baseline). Unknown run/bucket → **404** `NOT_FOUND`.
 
+### Idempotency (POST /v1/bookings, M3)
+
+Requires header **`Idempotency-Key`** (16–128 chars). Same key + same body replays stored terminal **`BookingResult`** with **200** (TC-005). New bookings return **501** until the full create path lands. Integration: `npm run test:idempotency-replay`.
+
 ### Inventory claim (booking path, M3)
 
 `claimInventorySeats` in `src/services/claim-inventory.ts` performs a single-row optimistic `UPDATE` (`version` + `available_seats`). Zero rows updated → `SOLD_OUT`, `VERSION_CONFLICT`, or `NOT_FOUND`. Integration tests: `npm run test:claim-inventory` (MySQL + fixture).
