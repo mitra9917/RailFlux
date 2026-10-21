@@ -64,6 +64,7 @@
     "aws:deploy:rds": "./infrastructure/scripts/aws-deploy-module.sh rds",
     "aws:smoke:rds-migrate": "./infrastructure/scripts/aws-rds-migrate-smoke.sh",
     "aws:deploy:rds-replica": "./infrastructure/scripts/aws-deploy-module.sh rds-replica",
+    "aws:deploy:elasticache": "./infrastructure/scripts/aws-deploy-module.sh elasticache",
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
