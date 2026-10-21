@@ -32,7 +32,7 @@ resources:
     booking: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
     worker: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
   database_class: TO_SET
-  cache_class: none
+  cache_class: none  # e.g. cache.t4g.micro when ElastiCache test window is deployed (M5 #45)
 cost:
   estimated_hourly_usd: TO_SET
   maximum_session_hours: TO_SET

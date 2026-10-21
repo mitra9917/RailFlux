@@ -21,7 +21,7 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `baseline/ecs-monolith.yaml` | Baseline Fargate service (M5 P3) |
 | `baseline/alb-ingress.yaml` | ALB + origin restriction (M5 P3) |
 | `optimized/rds-replica.yaml` | Read replica (**M5 #44**, optimized only) |
-| `optimized/elasticache.yaml` | Redis test window (M5 P2) |
+| `optimized/elasticache.yaml` | Redis test window (**M5 #45**) |
 | `optimized/sqs-worker.yaml` | SQS, DLQ, worker service (M5 P3) |
 | `optimized/ecs-services.yaml` | Read, booking, edge Fargate (M5 P3) |
 | `shared/cloudfront-oac.yaml` | Private S3 + CloudFront API origin (M5 P3) |
@@ -60,6 +60,7 @@ From repository root:
 | `npm run aws:deploy:rds` | RDS primary (requires network stack) |
 | `npm run aws:smoke:rds-migrate` | Run migrations against session RDS |
 | `npm run aws:deploy:rds-replica` | Read replica (after primary; optimized) |
+| `npm run aws:deploy:elasticache` | ElastiCache Redis (optimized test window) |
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).

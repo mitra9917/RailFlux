@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -105,9 +105,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica) ;;
+  network | iam | rds | rds-replica | elasticache) ;;
   *)
-    echo "Module must be network, iam, rds, or rds-replica." >&2
+    echo "Module must be network, iam, rds, rds-replica, or elasticache." >&2
     exit 1
     ;;
 esac
@@ -201,6 +201,23 @@ case "${MODULE}" in
       "SessionName=${SESSION}"
       "SourceDbInstanceIdentifier=${SOURCE_ID}"
       "RdsSecurityGroupId=${RDS_SG}"
+    )
+    ;;
+  elasticache)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/optimized/elasticache.yaml"
+    TAG_PROFILE="aws-optimized"
+    railflux_require_network_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    SUBNETS="$(railflux_cfn_output "${NETWORK_STACK}" PrivateDataSubnetIds)"
+    REDIS_SG="$(railflux_cfn_output "${NETWORK_STACK}" RedisSecurityGroupId)"
+    if [[ -z "${SUBNETS}" || "${SUBNETS}" == None || -z "${REDIS_SG}" || "${REDIS_SG}" == None ]]; then
+      echo "Network stack ${NETWORK_STACK} missing PrivateDataSubnetIds or RedisSecurityGroupId." >&2
+      exit 1
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "PrivateDataSubnetIds=${SUBNETS}"
+      "RedisSecurityGroupId=${REDIS_SG}"
     )
     ;;
 esac

@@ -28,6 +28,7 @@ railflux_module_stack_name() {
     iam) echo "railflux-iam-${session}" ;;
     rds) echo "railflux-rds-${session}" ;;
     rds-replica) echo "railflux-rds-replica-${session}" ;;
+    elasticache) echo "railflux-elasticache-${session}" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1

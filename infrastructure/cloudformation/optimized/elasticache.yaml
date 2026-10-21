@@ -1,18 +1,82 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux ElastiCache Redis test-window module (M5 P2 layout stub).
+Description: >-
+  RailFlux ElastiCache Redis for aws-optimized test windows (M5 #45). Single-node
+  cache.t4g.micro in private subnets; teardown with session stacks.
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  PrivateDataSubnetIds:
+    Type: CommaDelimitedList
+    Description: Private data subnet IDs from the network stack.
+  RedisSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Redis security group from the network stack.
+  CacheNodeType:
+    Type: String
+    Default: cache.t4g.micro
+    AllowedValues:
+      - cache.t4g.micro
+      - cache.t3.micro
+  EngineVersion:
+    Type: String
+    Default: "7.1"
 
 Metadata:
   RailFlux:
     Module: elasticache
     Profile: aws-optimized
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-45
+    TestWindowOnly: true
+    RunManifestFields:
+      resources.cache_class: CacheNodeType parameter
+      cost.expires_at: Must match stack ExpiresAt tag
+      cost.maximum_session_hours: Session budget per cost-plan.md
 
-Resources: {}
+Resources:
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: !Sub RailFlux ${SessionName} Redis subnets
+      SubnetIds: !Ref PrivateDataSubnetIds
+      CacheSubnetGroupName: !Sub railflux-${SessionName}-redis-subnets
+
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      ClusterName: !Sub railflux-${SessionName}-redis
+      Engine: redis
+      EngineVersion: !Ref EngineVersion
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref RedisSecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-redis
+        - Key: RailFluxTestWindow
+          Value: elasticache
 
 Outputs:
-  Module:
-    Value: elasticache
+  RedisClusterId:
+    Value: !Ref RedisCluster
+  RedisEndpointAddress:
+    Value: !GetAtt RedisCluster.RedisEndpoint.Address
+  RedisEndpointPort:
+    Value: !GetAtt RedisCluster.RedisEndpoint.Port
+  RedisUrl:
+    Description: Set REDIS_URL on read service tasks (authoritative booking still uses primary DB).
+    Value: !Join
+      - ""
+      - - "redis://"
+        - !GetAtt RedisCluster.RedisEndpoint.Address
+        - ":"
+        - !GetAtt RedisCluster.RedisEndpoint.Port
+  CacheNodeType:
+    Value: !Ref CacheNodeType

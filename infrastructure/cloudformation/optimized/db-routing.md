@@ -2,7 +2,7 @@
 
 | Service | `MYSQL_HOST` source | Authoritative for booking? |
 | --- | --- | --- |
-| **read** | `DbReplicaEndpointAddress` from **rds-replica** stack | No — advisory reads only |
+| **read** | `DbReplicaEndpointAddress` from **rds-replica** stack; optional `REDIS_URL` from **elasticache** stack | No — advisory reads only |
 | **booking** | `DbEndpointAddress` from **rds** (primary) stack | Yes — inventory + commits |
 | **worker** | Primary (same secret as booking) | Side-effect dedupe on primary |
 
