@@ -16,7 +16,8 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `shared/network.yaml` | VPC, subnets, routes, security groups (**M5 #42**) |
 | `shared/iam-task-roles.yaml` | ECS execution + per-service task roles (**M5 #42**) |
 | `shared/iam-matrix.md` | ST-005 prep — queue access matrix |
-| `shared/session-bootstrap.yaml` | Budget hooks, ECR, artifact buckets (M5 P4/P5) |
+| `shared/account-budgets.yaml` | AWS Budgets $10/$25/$50/$75 + anomaly email (**M5 #51**) |
+| `shared/session-bootstrap.yaml` | ECR/artifact buckets stub (M5 P5); budgets → account-budgets |
 | `shared/rds-primary.yaml` | Single-AZ MySQL primary (**M5 #43**) |
 | `baseline/ecs-monolith.yaml` | Baseline Fargate monolith (**M5 #46**, attaches to ALB TG from #47) |
 | `shared/alb-ingress.yaml` | ALB HTTPS + origin header + WAF hooks (**M5 #47**) |
@@ -53,6 +54,8 @@ From repository root:
 | Command | Purpose |
 | --- | --- |
 | `npm run cfn:validate` | Structural + optional AWS CLI template validation |
+| `npm run aws:deploy:account-budgets` | One-time account budget alerts (us-east-1, `--budget-alert-email`) |
+| `npm run aws:smoke:account-budgets` | Verify budget stack after deploy |
 | `npm run aws:deploy:baseline` | Deploy `aws-baseline` root (pass `--session`, tags) |
 | `npm run aws:deploy:optimized` | Deploy `aws-optimized` root |
 | `npm run aws:deploy:edge-waf` | Deploy CloudFront WAF in `us-east-1` (**M5 #47**) |
