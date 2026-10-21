@@ -7,7 +7,6 @@ import { after, before, describe, test } from 'node:test';
 import {
   BASELINE_BOOKING_CONFIRMED_HANDLER,
   BOOKING_CONFIRMED_EVENT_TYPE,
-  SIDE_EFFECTS_QUEUE_NAME,
 } from '@railflux/shared';
 import { SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createPool, pingDatabase } from '@railflux/baseline/db.js';
@@ -15,11 +14,11 @@ import {
   insertBookingConfirmedOutboxEvent,
 } from '../../services/baseline/dist/services/booking-outbox.js';
 import { processBookingConfirmedSideEffectMessage } from '@railflux/baseline/services/booking-side-effect-worker.js';
-import {
-  createSideEffectsSqsClient,
-  ensureSideEffectsQueue,
-} from '@railflux/baseline/services/outbox-sqs-publisher.js';
 import { pollSideEffectsQueueOnce } from '../../services/worker/dist/consume-side-effects.js';
+import {
+  createIntegrationSideEffectsSqsClient,
+  prepareIntegrationSideEffectsQueue,
+} from '../helpers/side-effects-sqs-test.mjs';
 
 const requireIntegration = process.env.TC010_INTEGRATION === '1';
 
@@ -31,10 +30,6 @@ function mysqlConfig() {
     password: process.env.MYSQL_PASSWORD ?? 'railflux',
     database: process.env.MYSQL_DATABASE ?? 'railflux',
   };
-}
-
-function sqsEndpoint() {
-  return process.env.SQS_ENDPOINT ?? 'http://127.0.0.1:9324';
 }
 
 describe('TC-010 side-effect duplicate (integration)', () => {
@@ -59,13 +54,9 @@ describe('TC-010 side-effect duplicate (integration)', () => {
     }
     if (!mysqlAvailable) return;
 
-    sqsClient = createSideEffectsSqsClient({
-      region: 'elasticmq-local',
-      endpoint: sqsEndpoint(),
-      queueUrl: 'http://placeholder',
-    });
+    sqsClient = createIntegrationSideEffectsSqsClient();
     try {
-      queueUrl = await ensureSideEffectsQueue(sqsClient, SIDE_EFFECTS_QUEUE_NAME);
+      queueUrl = await prepareIntegrationSideEffectsQueue(sqsClient, { purge: false });
       sqsAvailable = true;
     } catch (err) {
       sqsAvailable = false;
@@ -167,6 +158,7 @@ describe('TC-010 side-effect duplicate (integration)', () => {
     const seeded = await seedOutboxEvent();
     const body = JSON.stringify(seeded.message);
     try {
+      await prepareIntegrationSideEffectsQueue(sqsClient);
       await sqsClient.send(new SendMessageCommand({ QueueUrl: queueUrl, MessageBody: body }));
       await sqsClient.send(new SendMessageCommand({ QueueUrl: queueUrl, MessageBody: body }));
 
