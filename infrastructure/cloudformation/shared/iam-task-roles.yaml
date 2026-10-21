@@ -1,0 +1,375 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  RailFlux ECS task execution and task roles (M5 #42). Least-privilege split for
+  ST-005 — read/edge never receive SQS; worker cannot publish; booking cannot consume.
+
+Parameters:
+  SessionName:
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  DeploymentProfile:
+    Type: String
+    AllowedValues:
+      - aws-baseline
+      - aws-optimized
+  SideEffectsQueueArn:
+    Type: String
+    Default: ""
+    Description: Main side-effects queue ARN (optimized booking publish / worker consume).
+  SideEffectsDlqArn:
+    Type: String
+    Default: ""
+    Description: DLQ ARN for worker receive-only inspection (FT-004 path).
+  DbSecretArn:
+    Type: String
+    Default: ""
+    Description: Optional Secrets Manager ARN for MySQL credentials.
+
+Conditions:
+  IsBaseline: !Equals [!Ref DeploymentProfile, aws-baseline]
+  IsOptimized: !Equals [!Ref DeploymentProfile, aws-optimized]
+  HasSideEffectsQueue: !Not [!Equals [!Ref SideEffectsQueueArn, ""]]
+  HasSideEffectsDlq: !Not [!Equals [!Ref SideEffectsDlqArn, ""]]
+  HasDbSecret: !Not [!Equals [!Ref DbSecretArn, ""]]
+  BookingQueuePublish: !And
+    - !Condition IsOptimized
+    - !Condition HasSideEffectsQueue
+  WorkerQueueConsume: !And
+    - !Condition IsOptimized
+    - !Condition HasSideEffectsQueue
+  WorkerDlqInspect: !And
+    - !Condition WorkerQueueConsume
+    - !Condition HasSideEffectsDlq
+  BaselineHasDbSecret: !And
+    - !Condition IsBaseline
+    - !Condition HasDbSecret
+  OptimizedHasDbSecret: !And
+    - !Condition IsOptimized
+    - !Condition HasDbSecret
+
+Metadata:
+  RailFlux:
+    Module: iam-task-roles
+    LayoutVersion: m5-issue-42
+    St005Prep:
+      ReadService: "No SQS actions"
+      EdgeService: "No SQS actions"
+      BookingService: "sqs:SendMessage (+ GetQueueAttributes) on side-effects queue only"
+      WorkerService: "Receive/Delete/ChangeMessageVisibility on side-effects (+ DLQ read)"
+      BaselineMonolith: "No SQS actions (baseline AWS profile has no queue consumer)"
+
+Resources:
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-ecs-exec
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-ecs-exec
+
+  BaselineMonolithTaskRole:
+    Type: AWS::IAM::Role
+    Condition: IsBaseline
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-task-monolith
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-task-monolith
+
+  BaselineMonolithLogsPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsBaseline
+    Properties:
+      PolicyName: railflux-monolith-logs
+      Roles:
+        - !Ref BaselineMonolithTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/*
+
+  BaselineMonolithDbSecretPolicy:
+    Type: AWS::IAM::Policy
+    Condition: BaselineHasDbSecret
+    Properties:
+      PolicyName: railflux-monolith-db-secret
+      Roles:
+        - !Ref BaselineMonolithTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:DescribeSecret
+            Resource: !Ref DbSecretArn
+
+  ReadTaskRole:
+    Type: AWS::IAM::Role
+    Condition: IsOptimized
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-task-read
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-task-read
+
+  ReadLogsPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsOptimized
+    Properties:
+      PolicyName: railflux-read-logs
+      Roles:
+        - !Ref ReadTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/read/*
+
+  ReadDbSecretPolicy:
+    Type: AWS::IAM::Policy
+    Condition: OptimizedHasDbSecret
+    Properties:
+      PolicyName: railflux-read-db-secret
+      Roles:
+        - !Ref ReadTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:DescribeSecret
+            Resource: !Ref DbSecretArn
+
+  BookingTaskRole:
+    Type: AWS::IAM::Role
+    Condition: IsOptimized
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-task-booking
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-task-booking
+
+  BookingLogsPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsOptimized
+    Properties:
+      PolicyName: railflux-booking-logs
+      Roles:
+        - !Ref BookingTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/booking/*
+
+  BookingDbSecretPolicy:
+    Type: AWS::IAM::Policy
+    Condition: OptimizedHasDbSecret
+    Properties:
+      PolicyName: railflux-booking-db-secret
+      Roles:
+        - !Ref BookingTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:DescribeSecret
+            Resource: !Ref DbSecretArn
+
+  BookingSideEffectsPublishPolicy:
+    Type: AWS::IAM::Policy
+    Condition: BookingQueuePublish
+    Properties:
+      PolicyName: railflux-booking-sqs-publish
+      Roles:
+        - !Ref BookingTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublishSideEffectsOnly
+            Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:GetQueueAttributes
+            Resource: !Ref SideEffectsQueueArn
+
+  WorkerTaskRole:
+    Type: AWS::IAM::Role
+    Condition: IsOptimized
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-task-worker
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-task-worker
+
+  WorkerLogsPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsOptimized
+    Properties:
+      PolicyName: railflux-worker-logs
+      Roles:
+        - !Ref WorkerTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/worker/*
+
+  WorkerDbSecretPolicy:
+    Type: AWS::IAM::Policy
+    Condition: OptimizedHasDbSecret
+    Properties:
+      PolicyName: railflux-worker-db-secret
+      Roles:
+        - !Ref WorkerTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:DescribeSecret
+            Resource: !Ref DbSecretArn
+
+  WorkerSideEffectsConsumePolicy:
+    Type: AWS::IAM::Policy
+    Condition: WorkerQueueConsume
+    Properties:
+      PolicyName: railflux-worker-sqs-consume
+      Roles:
+        - !Ref WorkerTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ConsumeSideEffectsQueue
+            Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:ChangeMessageVisibility
+              - sqs:GetQueueAttributes
+            Resource: !Ref SideEffectsQueueArn
+
+  WorkerDlqInspectPolicy:
+    Type: AWS::IAM::Policy
+    Condition: WorkerDlqInspect
+    Properties:
+      PolicyName: railflux-worker-sqs-dlq-inspect
+      Roles:
+        - !Ref WorkerTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: InspectDlqOnly
+            Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:GetQueueAttributes
+            Resource: !Ref SideEffectsDlqArn
+
+  EdgeTaskRole:
+    Type: AWS::IAM::Role
+    Condition: IsOptimized
+    Properties:
+      RoleName: !Sub railflux-${SessionName}-task-edge
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-task-edge
+
+  EdgeLogsPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsOptimized
+    Properties:
+      PolicyName: railflux-edge-logs
+      Roles:
+        - !Ref EdgeTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/edge/*
+
+Outputs:
+  EcsTaskExecutionRoleArn:
+    Value: !GetAtt EcsTaskExecutionRole.Arn
+  BaselineMonolithTaskRoleArn:
+    Condition: IsBaseline
+    Value: !GetAtt BaselineMonolithTaskRole.Arn
+  ReadTaskRoleArn:
+    Condition: IsOptimized
+    Value: !GetAtt ReadTaskRole.Arn
+  BookingTaskRoleArn:
+    Condition: IsOptimized
+    Value: !GetAtt BookingTaskRole.Arn
+  WorkerTaskRoleArn:
+    Condition: IsOptimized
+    Value: !GetAtt WorkerTaskRole.Arn
+  EdgeTaskRoleArn:
+    Condition: IsOptimized
+    Value: !GetAtt EdgeTaskRole.Arn

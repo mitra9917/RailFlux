@@ -35,10 +35,11 @@ Metadata:
     ApplicationRegion: ap-south-1
     EdgeWafRegion: us-east-1
     EdgeWafTemplate: edge/waf.yaml
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-42
     PlannedNestedStacks:
       - shared/session-bootstrap.yaml
       - shared/network.yaml
+      - shared/iam-task-roles.yaml
       - optimized/rds-primary.yaml
       - optimized/rds-replica.yaml
       - optimized/elasticache.yaml
@@ -57,4 +58,4 @@ Outputs:
   ApplicationRegion:
     Value: !Ref ApplicationRegion
   StackLayoutVersion:
-    Value: m5-issue-41
+    Value: m5-issue-42

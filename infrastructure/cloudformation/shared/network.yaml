@@ -1,17 +1,274 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux VPC and security groups (M5 #42+ layout stub).
+Description: >-
+  RailFlux VPC, subnets, and security groups (M5 #42). SG matrix matches
+  docs/architecture/network-deployment.md.
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+  AppPort:
+    Type: Number
+    Default: 3000
+    Description: Container port exposed to the ALB target group.
+  CloudFrontOriginPrefixListId:
+    Type: String
+    Description: >-
+      Managed prefix list ID for com.amazonaws.global.cloudfront.origin-facing
+      in ap-south-1. Deploy script can resolve via EC2 describe-managed-prefix-lists.
 
 Metadata:
   RailFlux:
     Module: network
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-42
+    SecurityGroupMatrix:
+      Alb: "HTTPS from CloudFront origin-facing prefix list; egress to ECS app port"
+      Ecs: "App port from ALB SG; egress 443 (AWS APIs), 3306 to RDS SG, 6379 to Redis SG"
+      Rds: "3306 from ECS SG only"
+      Redis: "6379 from ECS SG only"
 
-Resources: {}
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-igw
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-public-a
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-public-b
+
+  PrivateDataSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: 10.0.11.0/24
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-data-a
+
+  PrivateDataSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: 10.0.12.0/24
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-data-b
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-public-rt
+
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetARouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  PublicSubnetBRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+
+  PrivateDataRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-data-rt
+
+  PrivateDataSubnetARouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateDataRouteTable
+      SubnetId: !Ref PrivateDataSubnetA
+
+  PrivateDataSubnetBRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateDataRouteTable
+      SubnetId: !Ref PrivateDataSubnetB
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub RailFlux ALB (${SessionName}) — CloudFront origin only
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourcePrefixListId: !Ref CloudFrontOriginPrefixListId
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-alb-sg
+
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub RailFlux ECS tasks (${SessionName})
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS to AWS APIs (ECR, SQS, Secrets Manager, CloudWatch)
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-ecs-sg
+
+  EcsFromAlbIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref AppPort
+      ToPort: !Ref AppPort
+      SourceSecurityGroupId: !Ref AlbSecurityGroup
+      Description: Application port from ALB only
+
+  AlbToEcsEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AlbSecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref AppPort
+      ToPort: !Ref AppPort
+      DestinationSecurityGroupId: !Ref EcsSecurityGroup
+      Description: Forward to ECS tasks
+
+  RdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub RailFlux RDS MySQL (${SessionName})
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-rds-sg
+
+  RdsFromEcsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RdsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref EcsSecurityGroup
+      Description: MySQL from ECS tasks only
+
+  EcsToRdsEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      DestinationSecurityGroupId: !Ref RdsSecurityGroup
+      Description: MySQL to RDS
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub RailFlux ElastiCache Redis (${SessionName})
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-redis-sg
+
+  RedisFromEcsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RedisSecurityGroup
+      IpProtocol: tcp
+      FromPort: 6379
+      ToPort: 6379
+      SourceSecurityGroupId: !Ref EcsSecurityGroup
+      Description: Redis from ECS tasks only
+
+  EcsToRedisEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 6379
+      ToPort: 6379
+      DestinationSecurityGroupId: !Ref RedisSecurityGroup
+      Description: Redis cache
 
 Outputs:
-  Module:
-    Value: network
+  VpcId:
+    Value: !Ref Vpc
+  PublicSubnetIds:
+    Value: !Join [",", [!Ref PublicSubnetA, !Ref PublicSubnetB]]
+  PrivateDataSubnetIds:
+    Value: !Join [",", [!Ref PrivateDataSubnetA, !Ref PrivateDataSubnetB]]
+  AlbSecurityGroupId:
+    Value: !Ref AlbSecurityGroup
+  EcsSecurityGroupId:
+    Value: !Ref EcsSecurityGroup
+  RdsSecurityGroupId:
+    Value: !Ref RdsSecurityGroup
+  RedisSecurityGroupId:
+    Value: !Ref RedisSecurityGroup
+  AppPort:
+    Value: !Ref AppPort
