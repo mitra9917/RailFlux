@@ -11,6 +11,7 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-deploy.sh` | Deploy `aws-baseline`, `aws-optimized`, or `aws-edge-waf` root stack |
 | `aws-deploy-module.sh` | Deploy `network`, `iam`, `rds`, `rds-replica`, or `elasticache` module |
 | `aws-rds-migrate-smoke.sh` | Baseline smoke — connect to RDS and run `migrate.sh` (M5 #43) |
+| `aws-ecs-alb-smoke.sh` | Wait for ALB target group healthy (M5 #46) |
 | `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 

@@ -1,18 +1,398 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux optimized read, booking, and edge Fargate services (M5 P3 layout stub).
+Description: >-
+  RailFlux aws-optimized ECS Fargate edge (ALB) + internal read/booking (M5 #46).
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  PublicSubnetIds:
+    Type: CommaDelimitedList
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  AlbSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  EcsTaskExecutionRoleArn:
+    Type: String
+  ReadTaskRoleArn:
+    Type: String
+  BookingTaskRoleArn:
+    Type: String
+  EdgeTaskRoleArn:
+    Type: String
+  ContainerImageEdge:
+    Type: String
+  ContainerImageRead:
+    Type: String
+  ContainerImageBooking:
+    Type: String
+  DbPrimaryEndpoint:
+    Type: String
+  DbReplicaEndpoint:
+    Type: String
+    Default: ""
+  DbName:
+    Type: String
+    Default: railflux
+  DbMasterSecretArn:
+    Type: String
+  RedisUrl:
+    Type: String
+    Default: ""
+  SyntheticJwtSecret:
+    Type: String
+    NoEcho: true
+  EdgePort:
+    Type: Number
+    Default: 3000
+  ReadPort:
+    Type: Number
+    Default: 3001
+  BookingPort:
+    Type: Number
+    Default: 3002
+  EdgeTaskCpu:
+    Type: String
+    Default: "256"
+  EdgeTaskMemory:
+    Type: String
+    Default: "512"
+  ReadTaskCpu:
+    Type: String
+    Default: "256"
+  ReadTaskMemory:
+    Type: String
+    Default: "512"
+  BookingTaskCpu:
+    Type: String
+    Default: "256"
+  BookingTaskMemory:
+    Type: String
+    Default: "512"
+
+Conditions:
+  HasReplica: !Not [!Equals [!Ref DbReplicaEndpoint, ""]]
+  HasRedis: !Not [!Equals [!Ref RedisUrl, ""]]
 
 Metadata:
   RailFlux:
     Module: ecs-services
     Profile: aws-optimized
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-46
 
-Resources: {}
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub railflux-${SessionName}-optimized
+
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub ${SessionName}.railflux.local
+      Vpc: !Ref VpcId
+      Description: !Sub RailFlux ${SessionName} internal service DNS
+
+  ReadDiscoveryService:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: read
+      NamespaceId: !Ref ServiceDiscoveryNamespace
+      DnsConfig:
+        RoutingPolicy: MULTIVALUE
+        DnsRecords:
+          - Type: A
+            TTL: 10
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  BookingDiscoveryService:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: booking
+      NamespaceId: !Ref ServiceDiscoveryNamespace
+      DnsConfig:
+        RoutingPolicy: MULTIVALUE
+        DnsRecords:
+          - Type: A
+            TTL: 10
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  EdgeLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/edge
+      RetentionInDays: 7
+
+  ReadLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/read
+      RetentionInDays: 7
+
+  BookingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/booking
+      RetentionInDays: 7
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups:
+        - !Ref AlbSecurityGroupId
+
+  EdgeTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: !Ref EdgePort
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckPath: /health/ready
+      HealthCheckProtocol: HTTP
+      Matcher:
+        HttpCode: "200"
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref EdgeTargetGroup
+
+  ReadTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub railflux-${SessionName}-read
+      Cpu: !Ref ReadTaskCpu
+      Memory: !Ref ReadTaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref EcsTaskExecutionRoleArn
+      TaskRoleArn: !Ref ReadTaskRoleArn
+      ContainerDefinitions:
+        - Name: read
+          Image: !Ref ContainerImageRead
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ReadPort
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: !Sub "${ReadPort}"
+            - Name: SERVICE_PROFILE
+              Value: optimized
+            - Name: MYSQL_HOST
+              Value: !If [HasReplica, !Ref DbReplicaEndpoint, !Ref DbPrimaryEndpoint]
+            - Name: MYSQL_PORT
+              Value: "3306"
+            - Name: MYSQL_DATABASE
+              Value: !Ref DbName
+            - Name: SYNTHETIC_JWT_SECRET
+              Value: !Ref SyntheticJwtSecret
+            - !If
+              - HasRedis
+              - Name: REDIS_URL
+                Value: !Ref RedisUrl
+              - !Ref AWS::NoValue
+          Secrets:
+            - Name: MYSQL_USER
+              ValueFrom: !Sub "${DbMasterSecretArn}:username::"
+            - Name: MYSQL_PASSWORD
+              ValueFrom: !Sub "${DbMasterSecretArn}:password::"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ReadLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: read
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - !Sub >-
+                node -e "fetch('http://127.0.0.1:${ReadPort}/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  BookingTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub railflux-${SessionName}-booking
+      Cpu: !Ref BookingTaskCpu
+      Memory: !Ref BookingTaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref EcsTaskExecutionRoleArn
+      TaskRoleArn: !Ref BookingTaskRoleArn
+      ContainerDefinitions:
+        - Name: booking
+          Image: !Ref ContainerImageBooking
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref BookingPort
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: !Sub "${BookingPort}"
+            - Name: SERVICE_PROFILE
+              Value: optimized
+            - Name: MYSQL_HOST
+              Value: !Ref DbPrimaryEndpoint
+            - Name: MYSQL_PORT
+              Value: "3306"
+            - Name: MYSQL_DATABASE
+              Value: !Ref DbName
+            - Name: SYNTHETIC_JWT_SECRET
+              Value: !Ref SyntheticJwtSecret
+          Secrets:
+            - Name: MYSQL_USER
+              ValueFrom: !Sub "${DbMasterSecretArn}:username::"
+            - Name: MYSQL_PASSWORD
+              ValueFrom: !Sub "${DbMasterSecretArn}:password::"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref BookingLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: booking
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - !Sub >-
+                node -e "fetch('http://127.0.0.1:${BookingPort}/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  EdgeTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub railflux-${SessionName}-edge
+      Cpu: !Ref EdgeTaskCpu
+      Memory: !Ref EdgeTaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref EcsTaskExecutionRoleArn
+      TaskRoleArn: !Ref EdgeTaskRoleArn
+      ContainerDefinitions:
+        - Name: edge
+          Image: !Ref ContainerImageEdge
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref EdgePort
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: !Sub "${EdgePort}"
+            - Name: READ_UPSTREAM
+              Value: !Sub http://read.${SessionName}.railflux.local:${ReadPort}
+            - Name: BOOKING_UPSTREAM
+              Value: !Sub http://booking.${SessionName}.railflux.local:${BookingPort}
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref EdgeLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: edge
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - !Sub >-
+                node -e "fetch('http://127.0.0.1:${EdgePort}/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 90
+
+  ReadService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub railflux-${SessionName}-read
+      Cluster: !Ref EcsCluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref ReadTaskDefinition
+      ServiceRegistries:
+        - RegistryArn: !GetAtt ReadDiscoveryService.Arn
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref EcsSecurityGroupId
+
+  BookingService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub railflux-${SessionName}-booking
+      Cluster: !Ref EcsCluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref BookingTaskDefinition
+      ServiceRegistries:
+        - RegistryArn: !GetAtt BookingDiscoveryService.Arn
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref EcsSecurityGroupId
+
+  EdgeService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - HttpListener
+      - ReadService
+      - BookingService
+    Properties:
+      ServiceName: !Sub railflux-${SessionName}-edge
+      Cluster: !Ref EcsCluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref EdgeTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref EcsSecurityGroupId
+      LoadBalancers:
+        - ContainerName: edge
+          ContainerPort: !Ref EdgePort
+          TargetGroupArn: !Ref EdgeTargetGroup
 
 Outputs:
-  Module:
-    Value: ecs-services
+  EcsClusterName:
+    Value: !Ref EcsCluster
+  AlbDnsName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  EdgeTargetGroupArn:
+    Value: !Ref EdgeTargetGroup
+  ResourceParityOptimized:
+    Value: !Sub '{"profile":"aws-optimized","edge":{"cpu_units":${EdgeTaskCpu},"memory_mib":${EdgeTaskMemory}},"read":{"cpu_units":${ReadTaskCpu},"memory_mib":${ReadTaskMemory}},"booking":{"cpu_units":${BookingTaskCpu},"memory_mib":${BookingTaskMemory}}}'
+  BookingUsesPrimaryDb:
+    Value: !Ref DbPrimaryEndpoint
+  ReadUsesReplicaWhenSet:
+    Value: !If [HasReplica, !Ref DbReplicaEndpoint, !Ref DbPrimaryEndpoint]

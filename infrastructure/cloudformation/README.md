@@ -18,12 +18,12 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `shared/iam-matrix.md` | ST-005 prep — queue access matrix |
 | `shared/session-bootstrap.yaml` | Budget hooks, ECR, artifact buckets (M5 P4/P5) |
 | `shared/rds-primary.yaml` | Single-AZ MySQL primary (**M5 #43**) |
-| `baseline/ecs-monolith.yaml` | Baseline Fargate service (M5 P3) |
+| `baseline/ecs-monolith.yaml` | Baseline Fargate + ALB (**M5 #46**) |
 | `baseline/alb-ingress.yaml` | ALB + origin restriction (M5 P3) |
 | `optimized/rds-replica.yaml` | Read replica (**M5 #44**, optimized only) |
 | `optimized/elasticache.yaml` | Redis test window (**M5 #45**) |
 | `optimized/sqs-worker.yaml` | SQS, DLQ, worker service (M5 P3) |
-| `optimized/ecs-services.yaml` | Read, booking, edge Fargate (M5 P3) |
+| `optimized/ecs-services.yaml` | Read, booking, edge Fargate + ALB (**M5 #46**) |
 | `shared/cloudfront-oac.yaml` | Private S3 + CloudFront API origin (M5 P3) |
 | `edge/waf.yaml` | **CloudFront-scoped WAF** (see below) |
 
