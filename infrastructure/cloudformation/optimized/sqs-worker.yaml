@@ -1,18 +1,64 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux SQS, DLQ, and worker Fargate (M5 P3 layout stub).
+Description: >-
+  RailFlux side-effects SQS + DLQ for aws-optimized (M5 #49). Booking publishes
+  after commit; worker consumes with redrive to DLQ (FT-004).
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  VisibilityTimeoutSeconds:
+    Type: Number
+    Default: 120
+    Description: Must exceed worker handler time (cache-and-queue design).
+  MaxReceiveCount:
+    Type: Number
+    Default: 3
+    Description: Matches SIDE_EFFECTS_MAX_RECEIVE_COUNT in @railflux/shared.
 
 Metadata:
   RailFlux:
     Module: sqs-worker
     Profile: aws-optimized
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-49
+    AsyncPath: booking outbox publish → SQS → worker processed_events
 
-Resources: {}
+Resources:
+  SideEffectsDlq:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      QueueName: !Sub railflux-${SessionName}-side-effects-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-side-effects-dlq
+
+  SideEffectsQueue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      QueueName: !Sub railflux-${SessionName}-side-effects
+      VisibilityTimeout: !Ref VisibilityTimeoutSeconds
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SideEffectsDlq.Arn
+        maxReceiveCount: !Ref MaxReceiveCount
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-side-effects
 
 Outputs:
-  Module:
-    Value: sqs-worker
+  SideEffectsQueueArn:
+    Value: !GetAtt SideEffectsQueue.Arn
+  SideEffectsQueueUrl:
+    Value: !Ref SideEffectsQueue
+  SideEffectsDlqArn:
+    Value: !GetAtt SideEffectsDlq.Arn
+  SideEffectsDlqUrl:
+    Value: !Ref SideEffectsDlq
+  SideEffectsMaxReceiveCount:
+    Value: !Ref MaxReceiveCount

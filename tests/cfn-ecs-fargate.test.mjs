@@ -24,6 +24,7 @@ test('M5 #46 optimized split services expose edge on ALB; booking uses primary D
   assert.match(optimized, /BookingTaskDefinition/);
   assert.match(optimized, /MYSQL_HOST\n              Value: !Ref DbPrimaryEndpoint/s);
   assert.match(optimized, /EdgeTargetGroupArn/);
+  assert.match(optimized, /WorkerService/);
   assert.match(optimized, /ServiceDiscoveryNamespace/);
   assert.match(optimized, /ResourceParityOptimized/);
 });

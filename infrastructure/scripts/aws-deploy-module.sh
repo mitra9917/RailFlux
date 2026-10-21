@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized|cloudfront-baseline|cloudfront-optimized> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|sqs-worker|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized|cloudfront-baseline|cloudfront-optimized> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -22,7 +22,7 @@ Options:
   --db-secret-arn         Secrets Manager ARN for MySQL (optional).
   --app-port N            ECS/ALB app port (network module, default 3000).
   --container-image URI   Baseline monolith ECR image (ecs-baseline).
-  --container-image-edge|--container-image-read|--container-image-booking  Optimized images.
+  --container-image-edge|--container-image-read|--container-image-booking|--container-image-worker  Optimized images.
   --synthetic-jwt-secret  Required for ECS modules (NoEcho CFN parameter).
   --acm-certificate-arn   Required for alb-* modules (ap-south-1 ACM cert).
   --origin-header-value Required for alb-* (CloudFront origin verify secret).
@@ -51,6 +51,7 @@ CONTAINER_IMAGE=""
 CONTAINER_IMAGE_EDGE=""
 CONTAINER_IMAGE_READ=""
 CONTAINER_IMAGE_BOOKING=""
+CONTAINER_IMAGE_WORKER=""
 SYNTHETIC_JWT_SECRET=""
 ACM_CERTIFICATE_ARN=""
 ORIGIN_HEADER_VALUE=""
@@ -120,6 +121,10 @@ while [[ $# -gt 0 ]]; do
       CONTAINER_IMAGE_BOOKING="$2"
       shift 2
       ;;
+    --container-image-worker)
+      CONTAINER_IMAGE_WORKER="$2"
+      shift 2
+      ;;
     --synthetic-jwt-secret)
       SYNTHETIC_JWT_SECRET="$2"
       shift 2
@@ -157,9 +162,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized) ;;
+  network | iam | rds | rds-replica | elasticache | sqs-worker | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, elasticache, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, or cloudfront-optimized." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, sqs-worker, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, or cloudfront-optimized." >&2
     exit 1
     ;;
 esac
@@ -207,6 +212,13 @@ case "${MODULE}" in
       RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
       if aws cloudformation describe-stacks --stack-name "${RDS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
         DB_SECRET_ARN="$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
+      fi
+    fi
+    if [[ "${DEPLOYMENT_PROFILE}" == aws-optimized && -z "${SIDE_EFFECTS_QUEUE_ARN}" ]]; then
+      SQS_STACK="$(railflux_module_stack_name sqs-worker "${SESSION}")"
+      if aws cloudformation describe-stacks --stack-name "${SQS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+        SIDE_EFFECTS_QUEUE_ARN="$(railflux_cfn_output "${SQS_STACK}" SideEffectsQueueArn)"
+        SIDE_EFFECTS_DLQ_ARN="$(railflux_cfn_output "${SQS_STACK}" SideEffectsDlqArn)"
       fi
     fi
     PARAM_OVERRIDES=(
@@ -270,6 +282,13 @@ case "${MODULE}" in
       "SessionName=${SESSION}"
       "PrivateDataSubnetIds=${SUBNETS}"
       "RedisSecurityGroupId=${REDIS_SG}"
+    )
+    ;;
+  sqs-worker)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/optimized/sqs-worker.yaml"
+    TAG_PROFILE="aws-optimized"
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
     )
     ;;
   alb-baseline | alb-optimized)
@@ -357,6 +376,17 @@ case "${MODULE}" in
       echo "ecs-optimized requires --container-image-edge/read/booking and --synthetic-jwt-secret." >&2
       exit 1
     fi
+    SQS_STACK="$(railflux_module_stack_name sqs-worker "${SESSION}")"
+    SIDE_EFFECTS_QUEUE_URL=""
+    SIDE_EFFECTS_DLQ_URL=""
+    if aws cloudformation describe-stacks --stack-name "${SQS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      SIDE_EFFECTS_QUEUE_URL="$(railflux_cfn_output "${SQS_STACK}" SideEffectsQueueUrl)"
+      SIDE_EFFECTS_DLQ_URL="$(railflux_cfn_output "${SQS_STACK}" SideEffectsDlqUrl)"
+      if [[ -z "${CONTAINER_IMAGE_WORKER}" ]]; then
+        echo "ecs-optimized requires --container-image-worker when sqs-worker stack ${SQS_STACK} exists." >&2
+        exit 1
+      fi
+    fi
     railflux_require_network_stack "${SESSION}"
     railflux_require_rds_primary_stack "${SESSION}"
     NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
@@ -386,10 +416,14 @@ case "${MODULE}" in
       "EcsTaskExecutionRoleArn=$(railflux_cfn_output "${IAM_STACK}" EcsTaskExecutionRoleArn)"
       "ReadTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" ReadTaskRoleArn)"
       "BookingTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" BookingTaskRoleArn)"
+      "WorkerTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" WorkerTaskRoleArn)"
       "EdgeTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" EdgeTaskRoleArn)"
       "ContainerImageEdge=${CONTAINER_IMAGE_EDGE}"
       "ContainerImageRead=${CONTAINER_IMAGE_READ}"
       "ContainerImageBooking=${CONTAINER_IMAGE_BOOKING}"
+      "ContainerImageWorker=${CONTAINER_IMAGE_WORKER}"
+      "SideEffectsQueueUrl=${SIDE_EFFECTS_QUEUE_URL}"
+      "SideEffectsDlqUrl=${SIDE_EFFECTS_DLQ_URL}"
       "DbPrimaryEndpoint=$(railflux_cfn_output "${RDS_STACK}" DbEndpointAddress)"
       "DbReplicaEndpoint=${REPLICA_ENDPOINT}"
       "DbName=$(railflux_cfn_output "${RDS_STACK}" DbName)"

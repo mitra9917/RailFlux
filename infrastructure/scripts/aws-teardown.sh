@@ -99,6 +99,7 @@ case "${PROFILE}" in
     delete_module_stack cloudfront-baseline
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
+    delete_module_stack sqs-worker
     delete_module_stack alb-optimized
     delete_module_stack alb-baseline
     delete_module_stack rds-replica
@@ -114,6 +115,7 @@ case "${PROFILE}" in
     delete_module_stack cloudfront-baseline
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
+    delete_module_stack sqs-worker
     delete_module_stack alb-optimized
     delete_module_stack alb-baseline
     delete_module_stack rds-replica
