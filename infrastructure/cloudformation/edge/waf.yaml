@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  RailFlux CloudFront WAF layout stub (M5 #41). Deploy only in us-east-1.
+  Managed rules and CloudFront association land in M5 ingress issues.
+
+Parameters:
+  SessionName:
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  RunId:
+    Type: String
+    Default: ""
+  Owner:
+    Type: String
+    Default: railflux
+  ExpiresAt:
+    Type: String
+    Description: ISO8601 session teardown deadline (tag)
+  EdgeRegion:
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+
+Metadata:
+  RailFlux:
+    Profile: aws-edge-waf
+    Scope: CLOUDFRONT
+    ApplicationRegion: ap-south-1
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  SessionName:
+    Value: !Ref SessionName
+  EdgeRegion:
+    Value: !Ref EdgeRegion
+  WafLayoutVersion:
+    Value: m5-issue-41

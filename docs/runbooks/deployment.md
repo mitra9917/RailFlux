@@ -1,6 +1,11 @@
 # Deployment Runbook
 
-Commands remain placeholders until CloudFormation implementation exists. Do not deploy manually around missing IaC.
+CloudFormation **layout stubs** and wrapper scripts ship in M5 #41 (`infrastructure/cloudformation/`, `infrastructure/scripts/aws-deploy.sh`). Full modules (VPC, RDS, ECS) land in follow-on M5 issues—do not deploy paid resources beyond empty root stacks until those modules exist unless you accept placeholder-only stacks.
+
+```bash
+npm run cfn:validate
+npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:59Z --owner YOU --run-id RUN_ID
+```
 
 ## Preflight
 
