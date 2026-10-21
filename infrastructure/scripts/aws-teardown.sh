@@ -95,14 +95,16 @@ case "${PROFILE}" in
     delete_stack "${PROFILE}"
     ;;
   modules)
-    delete_module_stack network
+    delete_module_stack rds
     delete_module_stack iam
+    delete_module_stack network
     ;;
   all)
     delete_stack aws-baseline
     delete_stack aws-optimized
-    delete_module_stack network
+    delete_module_stack rds
     delete_module_stack iam
+    delete_module_stack network
     delete_stack aws-edge-waf
     ;;
   *)

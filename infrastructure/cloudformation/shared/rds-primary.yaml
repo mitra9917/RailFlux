@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  RailFlux Single-AZ MySQL 8 primary (M5 #43). Private subnets only; credentials
+  in Secrets Manager (RDS-managed master password).
+
+Parameters:
+  SessionName:
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  PrivateDataSubnetIds:
+    Type: CommaDelimitedList
+    Description: Private data subnet IDs from the network stack (two AZs).
+  RdsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: RDS security group from the network stack.
+  DbInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+    AllowedValues:
+      - db.t4g.micro
+      - db.t3.micro
+  AllocatedStorageGb:
+    Type: Number
+    Default: 20
+    MinValue: 20
+    MaxValue: 100
+  EngineVersion:
+    Type: String
+    Default: "8.0.39"
+  DatabaseName:
+    Type: String
+    Default: railflux
+    AllowedPattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  MasterUsername:
+    Type: String
+    Default: railflux
+    AllowedPattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+
+Metadata:
+  RailFlux:
+    Module: rds-primary
+    LayoutVersion: m5-issue-43
+    CostPlan: Single-AZ academic primary (no Multi-AZ)
+
+Resources:
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub RailFlux ${SessionName} primary subnets
+      DBSubnetGroupName: !Sub railflux-${SessionName}-db-subnets
+      SubnetIds: !Ref PrivateDataSubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-db-subnets
+
+  DbPrimaryInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DBInstanceIdentifier: !Sub railflux-${SessionName}-primary
+      Engine: mysql
+      EngineVersion: !Ref EngineVersion
+      DBInstanceClass: !Ref DbInstanceClass
+      AllocatedStorage: !Ref AllocatedStorageGb
+      StorageType: gp3
+      StorageEncrypted: true
+      MultiAZ: false
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RdsSecurityGroupId
+      DBName: !Ref DatabaseName
+      MasterUsername: !Ref MasterUsername
+      ManageMasterUserPassword: true
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      AutoMinorVersionUpgrade: true
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-primary
+
+Outputs:
+  DbInstanceIdentifier:
+    Value: !Ref DbPrimaryInstance
+  DbEndpointAddress:
+    Value: !GetAtt DbPrimaryInstance.Endpoint.Address
+  DbEndpointPort:
+    Value: !GetAtt DbPrimaryInstance.Endpoint.Port
+  DbName:
+    Value: !Ref DatabaseName
+  DbMasterSecretArn:
+    Value: !GetAtt DbPrimaryInstance.MasterUserSecret.SecretArn
+  DbSubnetGroupName:
+    Value: !Ref DbSubnetGroup

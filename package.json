@@ -61,6 +61,8 @@
     "aws:deploy:edge-waf": "./infrastructure/scripts/aws-deploy.sh aws-edge-waf",
     "aws:deploy:network": "./infrastructure/scripts/aws-deploy-module.sh network",
     "aws:deploy:iam": "./infrastructure/scripts/aws-deploy-module.sh iam",
+    "aws:deploy:rds": "./infrastructure/scripts/aws-deploy-module.sh rds",
+    "aws:smoke:rds-migrate": "./infrastructure/scripts/aws-rds-migrate-smoke.sh",
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
