@@ -1,18 +1,201 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux baseline monolith ECS Fargate service (M5 P3 layout stub).
+Description: >-
+  RailFlux aws-baseline ECS Fargate monolith + ALB (M5 #46). HTTP listener for
+  smoke; TLS/origin hardening extended in ALB/WAF issue.
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  PublicSubnetIds:
+    Type: CommaDelimitedList
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  AlbSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  EcsTaskExecutionRoleArn:
+    Type: String
+  EcsTaskRoleArn:
+    Type: String
+  ContainerImage:
+    Type: String
+    Description: ECR image URI for baseline monolith.
+  DbEndpointAddress:
+    Type: String
+  DbName:
+    Type: String
+    Default: railflux
+  DbMasterSecretArn:
+    Type: String
+  SyntheticJwtSecret:
+    Type: String
+    NoEcho: true
+  AppPort:
+    Type: Number
+    Default: 3000
+  TaskCpu:
+    Type: String
+    Default: "512"
+    AllowedValues: ["256", "512", "1024", "2048"]
+  TaskMemory:
+    Type: String
+    Default: "1024"
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 4
 
 Metadata:
   RailFlux:
     Module: ecs-monolith
     Profile: aws-baseline
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-46
+    ResourceParity:
+      request_serving_vcpu: 0.5
+      request_serving_memory_gib: 1
 
-Resources: {}
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub railflux-${SessionName}-baseline
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-baseline
+
+  MonolithLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/monolith
+      RetentionInDays: 7
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups:
+        - !Ref AlbSecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-alb
+
+  MonolithTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: !Ref AppPort
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /health/ready
+      HealthCheckProtocol: HTTP
+      Matcher:
+        HttpCode: "200"
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-mono-tg
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref MonolithTargetGroup
+
+  MonolithTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub railflux-${SessionName}-monolith
+      Cpu: !Ref TaskCpu
+      Memory: !Ref TaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref EcsTaskExecutionRoleArn
+      TaskRoleArn: !Ref EcsTaskRoleArn
+      ContainerDefinitions:
+        - Name: monolith
+          Image: !Ref ContainerImage
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref AppPort
+              Protocol: tcp
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: PORT
+              Value: !Sub "${AppPort}"
+            - Name: MYSQL_HOST
+              Value: !Ref DbEndpointAddress
+            - Name: MYSQL_PORT
+              Value: "3306"
+            - Name: MYSQL_DATABASE
+              Value: !Ref DbName
+            - Name: SYNTHETIC_JWT_SECRET
+              Value: !Ref SyntheticJwtSecret
+          Secrets:
+            - Name: MYSQL_USER
+              ValueFrom: !Sub "${DbMasterSecretArn}:username::"
+            - Name: MYSQL_PASSWORD
+              ValueFrom: !Sub "${DbMasterSecretArn}:password::"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref MonolithLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: monolith
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - !Sub >-
+                node -e "fetch('http://127.0.0.1:${AppPort}/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  MonolithService:
+    Type: AWS::ECS::Service
+    DependsOn: HttpListener
+    Properties:
+      ServiceName: !Sub railflux-${SessionName}-monolith
+      Cluster: !Ref EcsCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref MonolithTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref EcsSecurityGroupId
+      LoadBalancers:
+        - ContainerName: monolith
+          ContainerPort: !Ref AppPort
+          TargetGroupArn: !Ref MonolithTargetGroup
 
 Outputs:
-  Module:
-    Value: ecs-monolith
+  EcsClusterName:
+    Value: !Ref EcsCluster
+  AlbDnsName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  MonolithTargetGroupArn:
+    Value: !Ref MonolithTargetGroup
+  TaskCpu:
+    Value: !Ref TaskCpu
+  TaskMemory:
+    Value: !Ref TaskMemory
+  ResourceParityBaseline:
+    Description: JSON snippet for run manifest resource parity.
+    Value: !Sub '{"profile":"aws-baseline","monolith":{"cpu_units":${TaskCpu},"memory_mib":${TaskMemory},"desired_count":${DesiredCount}}}'

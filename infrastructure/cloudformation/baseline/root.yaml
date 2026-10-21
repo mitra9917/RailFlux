@@ -35,7 +35,7 @@ Metadata:
     ApplicationRegion: ap-south-1
     EdgeWafRegion: us-east-1
     EdgeWafTemplate: edge/waf.yaml
-    LayoutVersion: m5-issue-42
+    LayoutVersion: m5-issue-46
     PlannedNestedStacks:
       - shared/session-bootstrap.yaml
       - shared/network.yaml

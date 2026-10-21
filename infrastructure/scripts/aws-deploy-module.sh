@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|ecs-baseline|ecs-optimized> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -21,6 +21,9 @@ Options:
   --side-effects-dlq-arn    DLQ ARN for worker inspect policy (optional).
   --db-secret-arn         Secrets Manager ARN for MySQL (optional).
   --app-port N            ECS/ALB app port (network module, default 3000).
+  --container-image URI   Baseline monolith ECR image (ecs-baseline).
+  --container-image-edge|--container-image-read|--container-image-booking  Optimized images.
+  --synthetic-jwt-secret  Required for ECS modules (NoEcho CFN parameter).
   --no-preflight          Skip sts get-caller-identity.
 
 Examples:
@@ -40,6 +43,11 @@ SIDE_EFFECTS_QUEUE_ARN=""
 SIDE_EFFECTS_DLQ_ARN=""
 DB_SECRET_ARN=""
 APP_PORT="3000"
+CONTAINER_IMAGE=""
+CONTAINER_IMAGE_EDGE=""
+CONTAINER_IMAGE_READ=""
+CONTAINER_IMAGE_BOOKING=""
+SYNTHETIC_JWT_SECRET=""
 NO_PREFLIGHT=0
 
 if [[ $# -lt 1 ]]; then
@@ -88,6 +96,26 @@ while [[ $# -gt 0 ]]; do
       APP_PORT="$2"
       shift 2
       ;;
+    --container-image)
+      CONTAINER_IMAGE="$2"
+      shift 2
+      ;;
+    --container-image-edge)
+      CONTAINER_IMAGE_EDGE="$2"
+      shift 2
+      ;;
+    --container-image-read)
+      CONTAINER_IMAGE_READ="$2"
+      shift 2
+      ;;
+    --container-image-booking)
+      CONTAINER_IMAGE_BOOKING="$2"
+      shift 2
+      ;;
+    --synthetic-jwt-secret)
+      SYNTHETIC_JWT_SECRET="$2"
+      shift 2
+      ;;
     --no-preflight)
       NO_PREFLIGHT=1
       shift
@@ -105,9 +133,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache) ;;
+  network | iam | rds | rds-replica | elasticache | ecs-baseline | ecs-optimized) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, or elasticache." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, ecs-baseline, or ecs-optimized." >&2
     exit 1
     ;;
 esac
@@ -218,6 +246,81 @@ case "${MODULE}" in
       "SessionName=${SESSION}"
       "PrivateDataSubnetIds=${SUBNETS}"
       "RedisSecurityGroupId=${REDIS_SG}"
+    )
+    ;;
+  ecs-baseline)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/baseline/ecs-monolith.yaml"
+    TAG_PROFILE="aws-baseline"
+    if [[ -z "${CONTAINER_IMAGE}" || -z "${SYNTHETIC_JWT_SECRET}" ]]; then
+      echo "ecs-baseline requires --container-image and --synthetic-jwt-secret." >&2
+      exit 1
+    fi
+    railflux_require_network_stack "${SESSION}"
+    railflux_require_rds_primary_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
+    IAM_STACK="$(railflux_module_stack_name iam "${SESSION}")"
+    if ! aws cloudformation describe-stacks --stack-name "${IAM_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      echo "IAM stack ${IAM_STACK} not found. Deploy iam with --deployment-profile aws-baseline first." >&2
+      exit 1
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "PublicSubnetIds=$(railflux_cfn_output "${NETWORK_STACK}" PublicSubnetIds)"
+      "VpcId=$(railflux_cfn_output "${NETWORK_STACK}" VpcId)"
+      "AlbSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" AlbSecurityGroupId)"
+      "EcsSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" EcsSecurityGroupId)"
+      "EcsTaskExecutionRoleArn=$(railflux_cfn_output "${IAM_STACK}" EcsTaskExecutionRoleArn)"
+      "EcsTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" BaselineMonolithTaskRoleArn)"
+      "ContainerImage=${CONTAINER_IMAGE}"
+      "DbEndpointAddress=$(railflux_cfn_output "${RDS_STACK}" DbEndpointAddress)"
+      "DbName=$(railflux_cfn_output "${RDS_STACK}" DbName)"
+      "DbMasterSecretArn=$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
+      "SyntheticJwtSecret=${SYNTHETIC_JWT_SECRET}"
+      "AppPort=${APP_PORT}"
+    )
+    ;;
+  ecs-optimized)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/optimized/ecs-services.yaml"
+    TAG_PROFILE="aws-optimized"
+    if [[ -z "${CONTAINER_IMAGE_EDGE}" || -z "${CONTAINER_IMAGE_READ}" || -z "${CONTAINER_IMAGE_BOOKING}" || -z "${SYNTHETIC_JWT_SECRET}" ]]; then
+      echo "ecs-optimized requires --container-image-edge/read/booking and --synthetic-jwt-secret." >&2
+      exit 1
+    fi
+    railflux_require_network_stack "${SESSION}"
+    railflux_require_rds_primary_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
+    IAM_STACK="$(railflux_module_stack_name iam "${SESSION}")"
+    REPLICA_STACK="$(railflux_module_stack_name rds-replica "${SESSION}")"
+    CACHE_STACK="$(railflux_module_stack_name elasticache "${SESSION}")"
+    REPLICA_ENDPOINT=""
+    REDIS_URL=""
+    if aws cloudformation describe-stacks --stack-name "${REPLICA_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      REPLICA_ENDPOINT="$(railflux_cfn_output "${REPLICA_STACK}" DbReplicaEndpointAddress)"
+    fi
+    if aws cloudformation describe-stacks --stack-name "${CACHE_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      REDIS_URL="$(railflux_cfn_output "${CACHE_STACK}" RedisUrl)"
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "PublicSubnetIds=$(railflux_cfn_output "${NETWORK_STACK}" PublicSubnetIds)"
+      "VpcId=$(railflux_cfn_output "${NETWORK_STACK}" VpcId)"
+      "AlbSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" AlbSecurityGroupId)"
+      "EcsSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" EcsSecurityGroupId)"
+      "EcsTaskExecutionRoleArn=$(railflux_cfn_output "${IAM_STACK}" EcsTaskExecutionRoleArn)"
+      "ReadTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" ReadTaskRoleArn)"
+      "BookingTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" BookingTaskRoleArn)"
+      "EdgeTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" EdgeTaskRoleArn)"
+      "ContainerImageEdge=${CONTAINER_IMAGE_EDGE}"
+      "ContainerImageRead=${CONTAINER_IMAGE_READ}"
+      "ContainerImageBooking=${CONTAINER_IMAGE_BOOKING}"
+      "DbPrimaryEndpoint=$(railflux_cfn_output "${RDS_STACK}" DbEndpointAddress)"
+      "DbReplicaEndpoint=${REPLICA_ENDPOINT}"
+      "DbName=$(railflux_cfn_output "${RDS_STACK}" DbName)"
+      "DbMasterSecretArn=$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
+      "RedisUrl=${REDIS_URL}"
+      "SyntheticJwtSecret=${SYNTHETIC_JWT_SECRET}"
     )
     ;;
 esac
