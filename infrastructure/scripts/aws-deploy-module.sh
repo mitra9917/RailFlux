@@ -28,6 +28,7 @@ Options:
   --origin-header-value Required for alb-* (CloudFront origin verify secret).
   --origin-header-name    ALB header name (default X-RailFlux-Origin-Verify).
   --waf-mode off|on       ALB/manifest WAF cell hook (default off).
+  --budget-alert-email    Required for account-budgets (owner notification email).
   --no-preflight          Skip sts get-caller-identity.
 
 Examples:
@@ -57,6 +58,7 @@ ACM_CERTIFICATE_ARN=""
 ORIGIN_HEADER_VALUE=""
 ORIGIN_HEADER_NAME="X-RailFlux-Origin-Verify"
 WAF_MODE="off"
+BUDGET_ALERT_EMAIL=""
 NO_PREFLIGHT=0
 
 if [[ $# -lt 1 ]]; then
@@ -145,6 +147,10 @@ while [[ $# -gt 0 ]]; do
       WAF_MODE="$2"
       shift 2
       ;;
+    --budget-alert-email)
+      BUDGET_ALERT_EMAIL="$2"
+      shift 2
+      ;;
     --no-preflight)
       NO_PREFLIGHT=1
       shift
@@ -162,16 +168,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache | sqs-worker | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized | observability) ;;
+  network | iam | rds | rds-replica | elasticache | sqs-worker | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized | observability | account-budgets) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, elasticache, sqs-worker, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, cloudfront-optimized, or observability." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, sqs-worker, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, cloudfront-optimized, observability, or account-budgets." >&2
     exit 1
     ;;
 esac
 
-if [[ -z "${SESSION}" || -z "${EXPIRES_AT}" ]]; then
-  echo "--session and --expires-at are required." >&2
-  exit 1
+if [[ "${MODULE}" == account-budgets ]]; then
+  if [[ -z "${BUDGET_ALERT_EMAIL}" ]]; then
+    echo "account-budgets requires --budget-alert-email." >&2
+    exit 1
+  fi
+  SESSION="${SESSION:-account}"
+  EXPIRES_AT="${EXPIRES_AT:-2099-01-01T00:00:00Z}"
+else
+  if [[ -z "${SESSION}" || -z "${EXPIRES_AT}" ]]; then
+    echo "--session and --expires-at are required." >&2
+    exit 1
+  fi
 fi
 
 if [[ -z "${RUN_ID}" ]]; then
@@ -201,6 +216,14 @@ REGION="${RAILFLUX_APP_REGION}"
 TAG_PROFILE="aws-module-${MODULE}"
 
 case "${MODULE}" in
+  account-budgets)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/shared/account-budgets.yaml"
+    REGION="${RAILFLUX_EDGE_REGION}"
+    TAG_PROFILE="aws-account-budgets"
+    PARAM_OVERRIDES=(
+      "BudgetAlertEmail=${BUDGET_ALERT_EMAIL}"
+    )
+    ;;
   network)
     TEMPLATE="${RAILFLUX_CFN_DIR}/shared/network.yaml"
     PREFIX_LIST="$(railflux_cloudfront_origin_prefix_list_id "${REGION}")"

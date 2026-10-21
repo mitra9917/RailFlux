@@ -40,6 +40,8 @@ if command -v aws >/dev/null 2>&1; then
       region="${RAILFLUX_APP_REGION}"
       if [[ "${template}" == *"/edge/"* ]]; then
         region="${RAILFLUX_EDGE_REGION}"
+      elif [[ "${template}" == *"/shared/account-budgets.yaml" ]]; then
+        region="${RAILFLUX_EDGE_REGION}"
       fi
       aws cloudformation validate-template \
         --template-body "file://${template}" \
