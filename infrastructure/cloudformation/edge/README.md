@@ -12,7 +12,7 @@ CloudFront-associated **AWS WAF** web ACLs must be created in **`us-east-1`**, e
 
 | File | Scope |
 | --- | --- |
-| `waf.yaml` | Layout stub for session-scoped WAF ACL + rate rule hooks (M5 #47 ALB/WAF cell hooks) |
+| `waf.yaml` | CloudFront-scoped WAF ACL + managed rules + rate limit (**M5 #47**) |
 
 ## Deploy
 

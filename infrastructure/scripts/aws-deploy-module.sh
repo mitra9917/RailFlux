@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|ecs-baseline|ecs-optimized> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -24,6 +24,10 @@ Options:
   --container-image URI   Baseline monolith ECR image (ecs-baseline).
   --container-image-edge|--container-image-read|--container-image-booking  Optimized images.
   --synthetic-jwt-secret  Required for ECS modules (NoEcho CFN parameter).
+  --acm-certificate-arn   Required for alb-* modules (ap-south-1 ACM cert).
+  --origin-header-value Required for alb-* (CloudFront origin verify secret).
+  --origin-header-name    ALB header name (default X-RailFlux-Origin-Verify).
+  --waf-mode off|on       ALB/manifest WAF cell hook (default off).
   --no-preflight          Skip sts get-caller-identity.
 
 Examples:
@@ -48,6 +52,10 @@ CONTAINER_IMAGE_EDGE=""
 CONTAINER_IMAGE_READ=""
 CONTAINER_IMAGE_BOOKING=""
 SYNTHETIC_JWT_SECRET=""
+ACM_CERTIFICATE_ARN=""
+ORIGIN_HEADER_VALUE=""
+ORIGIN_HEADER_NAME="X-RailFlux-Origin-Verify"
+WAF_MODE="off"
 NO_PREFLIGHT=0
 
 if [[ $# -lt 1 ]]; then
@@ -116,6 +124,22 @@ while [[ $# -gt 0 ]]; do
       SYNTHETIC_JWT_SECRET="$2"
       shift 2
       ;;
+    --acm-certificate-arn)
+      ACM_CERTIFICATE_ARN="$2"
+      shift 2
+      ;;
+    --origin-header-value)
+      ORIGIN_HEADER_VALUE="$2"
+      shift 2
+      ;;
+    --origin-header-name)
+      ORIGIN_HEADER_NAME="$2"
+      shift 2
+      ;;
+    --waf-mode)
+      WAF_MODE="$2"
+      shift 2
+      ;;
     --no-preflight)
       NO_PREFLIGHT=1
       shift
@@ -133,9 +157,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache | ecs-baseline | ecs-optimized) ;;
+  network | iam | rds | rds-replica | elasticache | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, elasticache, ecs-baseline, or ecs-optimized." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, alb-baseline, alb-optimized, ecs-baseline, or ecs-optimized." >&2
     exit 1
     ;;
 esac
@@ -248,6 +272,48 @@ case "${MODULE}" in
       "RedisSecurityGroupId=${REDIS_SG}"
     )
     ;;
+  alb-baseline | alb-optimized)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/shared/alb-ingress.yaml"
+    if [[ -z "${ACM_CERTIFICATE_ARN}" || -z "${ORIGIN_HEADER_VALUE}" ]]; then
+      echo "alb-* modules require --acm-certificate-arn and --origin-header-value." >&2
+      exit 1
+    fi
+    railflux_require_network_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    CF_WAF_ARN=""
+    if [[ "${WAF_MODE}" == on ]]; then
+      EDGE_STACK="$(railflux_stack_name aws-edge-waf "${SESSION}")"
+      if aws cloudformation describe-stacks --stack-name "${EDGE_STACK}" --region "${RAILFLUX_EDGE_REGION}" >/dev/null 2>&1; then
+        CF_WAF_ARN="$(railflux_cfn_output "${EDGE_STACK}" CloudFrontWebAclArn "${RAILFLUX_EDGE_REGION}")"
+      else
+        echo "WafMode=on but edge stack ${EDGE_STACK} not found in ${RAILFLUX_EDGE_REGION}. Deploy aws:deploy:edge-waf first." >&2
+        exit 1
+      fi
+    fi
+    if [[ "${MODULE}" == alb-baseline ]]; then
+      TAG_PROFILE="aws-baseline"
+      INGRESS_PROFILE="aws-baseline"
+      TG_SUFFIX="mono"
+    else
+      TAG_PROFILE="aws-optimized"
+      INGRESS_PROFILE="aws-optimized"
+      TG_SUFFIX="edge"
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "IngressProfile=${INGRESS_PROFILE}"
+      "TargetGroupSuffix=${TG_SUFFIX}"
+      "PublicSubnetIds=$(railflux_cfn_output "${NETWORK_STACK}" PublicSubnetIds)"
+      "VpcId=$(railflux_cfn_output "${NETWORK_STACK}" VpcId)"
+      "AlbSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" AlbSecurityGroupId)"
+      "AppPort=${APP_PORT}"
+      "AcmCertificateArn=${ACM_CERTIFICATE_ARN}"
+      "OriginVerifyHeaderName=${ORIGIN_HEADER_NAME}"
+      "OriginVerifyHeaderValue=${ORIGIN_HEADER_VALUE}"
+      "WafMode=${WAF_MODE}"
+      "CloudFrontWebAclArn=${CF_WAF_ARN}"
+    )
+    ;;
   ecs-baseline)
     TEMPLATE="${RAILFLUX_CFN_DIR}/baseline/ecs-monolith.yaml"
     TAG_PROFILE="aws-baseline"
@@ -264,11 +330,15 @@ case "${MODULE}" in
       echo "IAM stack ${IAM_STACK} not found. Deploy iam with --deployment-profile aws-baseline first." >&2
       exit 1
     fi
+    ALB_STACK="$(railflux_module_stack_name alb-baseline "${SESSION}")"
+    if ! aws cloudformation describe-stacks --stack-name "${ALB_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      echo "ALB stack ${ALB_STACK} not found. Deploy alb-baseline first." >&2
+      exit 1
+    fi
     PARAM_OVERRIDES=(
       "SessionName=${SESSION}"
       "PublicSubnetIds=$(railflux_cfn_output "${NETWORK_STACK}" PublicSubnetIds)"
-      "VpcId=$(railflux_cfn_output "${NETWORK_STACK}" VpcId)"
-      "AlbSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" AlbSecurityGroupId)"
+      "TargetGroupArn=$(railflux_cfn_output "${ALB_STACK}" TargetGroupArn)"
       "EcsSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" EcsSecurityGroupId)"
       "EcsTaskExecutionRoleArn=$(railflux_cfn_output "${IAM_STACK}" EcsTaskExecutionRoleArn)"
       "EcsTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" BaselineMonolithTaskRoleArn)"
@@ -302,11 +372,16 @@ case "${MODULE}" in
     if aws cloudformation describe-stacks --stack-name "${CACHE_STACK}" --region "${REGION}" >/dev/null 2>&1; then
       REDIS_URL="$(railflux_cfn_output "${CACHE_STACK}" RedisUrl)"
     fi
+    ALB_STACK="$(railflux_module_stack_name alb-optimized "${SESSION}")"
+    if ! aws cloudformation describe-stacks --stack-name "${ALB_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      echo "ALB stack ${ALB_STACK} not found. Deploy alb-optimized first." >&2
+      exit 1
+    fi
     PARAM_OVERRIDES=(
       "SessionName=${SESSION}"
       "PublicSubnetIds=$(railflux_cfn_output "${NETWORK_STACK}" PublicSubnetIds)"
       "VpcId=$(railflux_cfn_output "${NETWORK_STACK}" VpcId)"
-      "AlbSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" AlbSecurityGroupId)"
+      "EdgeTargetGroupArn=$(railflux_cfn_output "${ALB_STACK}" TargetGroupArn)"
       "EcsSecurityGroupId=$(railflux_cfn_output "${NETWORK_STACK}" EcsSecurityGroupId)"
       "EcsTaskExecutionRoleArn=$(railflux_cfn_output "${IAM_STACK}" EcsTaskExecutionRoleArn)"
       "ReadTaskRoleArn=$(railflux_cfn_output "${IAM_STACK}" ReadTaskRoleArn)"

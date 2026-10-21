@@ -55,12 +55,10 @@ fi
 
 case "${PROFILE}" in
   aws-baseline)
-    STACK="$(railflux_module_stack_name ecs-baseline "${SESSION}")"
-    TG_KEY="MonolithTargetGroupArn"
+    STACK="$(railflux_module_stack_name alb-baseline "${SESSION}")"
     ;;
   aws-optimized)
-    STACK="$(railflux_module_stack_name ecs-optimized "${SESSION}")"
-    TG_KEY="EdgeTargetGroupArn"
+    STACK="$(railflux_module_stack_name alb-optimized "${SESSION}")"
     ;;
   *)
     echo "Profile must be aws-baseline or aws-optimized." >&2
@@ -68,9 +66,9 @@ case "${PROFILE}" in
     ;;
 esac
 
-TG_ARN="$(railflux_cfn_output "${STACK}" "${TG_KEY}")"
+TG_ARN="$(railflux_cfn_output "${STACK}" TargetGroupArn)"
 if [[ -z "${TG_ARN}" || "${TG_ARN}" == None ]]; then
-  echo "Stack ${STACK} missing ${TG_KEY}." >&2
+  echo "Stack ${STACK} missing TargetGroupArn." >&2
   exit 1
 fi
 
@@ -85,7 +83,7 @@ while (( SECONDS < deadline )); do
   if [[ "${healthy}" != 0 && "${healthy}" != "0" ]]; then
     ALB_DNS="$(railflux_cfn_output "${STACK}" AlbDnsName)"
     echo "ALB target healthy (count=${healthy}). AlbDnsName=${ALB_DNS}"
-    echo "Smoke: curl -sf http://${ALB_DNS}/health/ready (may be blocked by CloudFront-only ALB SG from outside VPC)."
+    echo "Smoke: curl -sf -H \"X-RailFlux-Origin-Verify: <secret>\" https://${ALB_DNS}/health/ready"
     exit 0
   fi
   sleep 15

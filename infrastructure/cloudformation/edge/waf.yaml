@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
-  RailFlux CloudFront WAF layout stub (M5 #41). Deploy only in us-east-1.
-  Managed rules and CloudFront association land in M5 ingress issues.
+  RailFlux CloudFront WAF (M5 #47). Deploy in us-east-1 for ST-001–ST-003 cells.
+  Associate this Web ACL with the CloudFront distribution origin to the ALB.
 
 Parameters:
   SessionName:
@@ -18,25 +18,66 @@ Parameters:
   ExpiresAt:
     Type: String
     Description: ISO8601 session teardown deadline (tag)
-  EdgeRegion:
-    Type: String
-    Default: us-east-1
-    AllowedValues:
-      - us-east-1
+  RateLimitPerFiveMinutes:
+    Type: Number
+    Default: 2000
+    Description: Aggregate IP rate limit (ST-002 concentration hook).
 
 Metadata:
   RailFlux:
     Profile: aws-edge-waf
     Scope: CLOUDFRONT
     ApplicationRegion: ap-south-1
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-47
+    SecurityTests:
+      ST-001: AWSManagedRulesCommonRuleSet
+      ST-002: RateBasedRule
+      ST-003: Tune rate / exclusions in manifest for false positives
 
-Resources: {}
+Resources:
+  CloudFrontWebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub railflux-${SessionName}-cf-waf
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub railflux-${SessionName}-cf-waf
+      Rules:
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub railflux-${SessionName}-common
+        - Name: RateLimitPerIp
+          Priority: 1
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: !Ref RateLimitPerFiveMinutes
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub railflux-${SessionName}-rate
 
 Outputs:
   SessionName:
     Value: !Ref SessionName
+  CloudFrontWebAclArn:
+    Value: !GetAtt CloudFrontWebAcl.Arn
   EdgeRegion:
-    Value: !Ref EdgeRegion
+    Value: us-east-1
   WafLayoutVersion:
-    Value: m5-issue-41
+    Value: m5-issue-47

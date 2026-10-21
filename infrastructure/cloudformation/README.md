@@ -18,12 +18,12 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `shared/iam-matrix.md` | ST-005 prep — queue access matrix |
 | `shared/session-bootstrap.yaml` | Budget hooks, ECR, artifact buckets (M5 P4/P5) |
 | `shared/rds-primary.yaml` | Single-AZ MySQL primary (**M5 #43**) |
-| `baseline/ecs-monolith.yaml` | Baseline Fargate + ALB (**M5 #46**) |
-| `baseline/alb-ingress.yaml` | ALB + origin restriction (M5 P3) |
+| `baseline/ecs-monolith.yaml` | Baseline Fargate monolith (**M5 #46**, attaches to ALB TG from #47) |
+| `shared/alb-ingress.yaml` | ALB HTTPS + origin header + WAF hooks (**M5 #47**) |
 | `optimized/rds-replica.yaml` | Read replica (**M5 #44**, optimized only) |
 | `optimized/elasticache.yaml` | Redis test window (**M5 #45**) |
 | `optimized/sqs-worker.yaml` | SQS, DLQ, worker service (M5 P3) |
-| `optimized/ecs-services.yaml` | Read, booking, edge Fargate + ALB (**M5 #46**) |
+| `optimized/ecs-services.yaml` | Read, booking, edge Fargate (**M5 #46**, edge TG from #47) |
 | `shared/cloudfront-oac.yaml` | Private S3 + CloudFront API origin (M5 P3) |
 | `edge/waf.yaml` | **CloudFront-scoped WAF** (see below) |
 
@@ -54,7 +54,12 @@ From repository root:
 | `npm run cfn:validate` | Structural + optional AWS CLI template validation |
 | `npm run aws:deploy:baseline` | Deploy `aws-baseline` root (pass `--session`, tags) |
 | `npm run aws:deploy:optimized` | Deploy `aws-optimized` root |
-| `npm run aws:deploy:edge-waf` | Deploy CloudFront WAF stub in `us-east-1` |
+| `npm run aws:deploy:edge-waf` | Deploy CloudFront WAF in `us-east-1` (**M5 #47**) |
+| `npm run aws:deploy:alb-baseline` | ALB HTTPS + origin header (baseline) |
+| `npm run aws:deploy:alb-optimized` | ALB HTTPS + origin header (optimized edge TG) |
+| `npm run aws:deploy:ecs-baseline` | Fargate monolith (requires alb-baseline) |
+| `npm run aws:deploy:ecs-optimized` | Split Fargate services (requires alb-optimized) |
+| `npm run aws:smoke:ecs-alb` | Wait for ALB target group healthy |
 | `npm run aws:deploy:network` | VPC + security groups for a session |
 | `npm run aws:deploy:iam` | Task roles (pass `--deployment-profile`) |
 | `npm run aws:deploy:rds` | RDS primary (requires network stack) |

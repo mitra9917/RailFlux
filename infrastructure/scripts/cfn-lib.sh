@@ -31,6 +31,8 @@ railflux_module_stack_name() {
     elasticache) echo "railflux-elasticache-${session}" ;;
     ecs-baseline) echo "railflux-ecs-baseline-${session}" ;;
     ecs-optimized) echo "railflux-ecs-optimized-${session}" ;;
+    alb-baseline) echo "railflux-alb-baseline-${session}" ;;
+    alb-optimized) echo "railflux-alb-optimized-${session}" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1

@@ -13,10 +13,9 @@ const optimized = readFileSync(
   'utf8',
 );
 
-test('M5 #46 baseline Fargate monolith registers ALB health on /health/ready', () => {
+test('M5 #46 baseline Fargate monolith attaches to external target group', () => {
   assert.match(baseline, /AWS::ECS::TaskDefinition/);
-  assert.match(baseline, /AWS::ElasticLoadBalancingV2::TargetGroup/);
-  assert.match(baseline, /HealthCheckPath: \/health\/ready/);
+  assert.match(baseline, /TargetGroupArn/);
   assert.match(baseline, /ResourceParityBaseline/);
   assert.match(baseline, /LaunchType: FARGATE/);
 });
@@ -24,7 +23,7 @@ test('M5 #46 baseline Fargate monolith registers ALB health on /health/ready', (
 test('M5 #46 optimized split services expose edge on ALB; booking uses primary DB', () => {
   assert.match(optimized, /BookingTaskDefinition/);
   assert.match(optimized, /MYSQL_HOST\n              Value: !Ref DbPrimaryEndpoint/s);
-  assert.match(optimized, /EdgeTargetGroup/);
+  assert.match(optimized, /EdgeTargetGroupArn/);
   assert.match(optimized, /ServiceDiscoveryNamespace/);
   assert.match(optimized, /ResourceParityOptimized/);
 });
