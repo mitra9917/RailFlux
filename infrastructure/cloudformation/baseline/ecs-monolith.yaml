@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
-  RailFlux aws-baseline ECS Fargate monolith + ALB (M5 #46). HTTP listener for
-  smoke; TLS/origin hardening extended in ALB/WAF issue.
+  RailFlux aws-baseline ECS Fargate monolith (M5 #46). ALB ingress is
+  shared/alb-ingress.yaml (M5 #47).
 
 Parameters:
   SessionName:
@@ -11,10 +11,9 @@ Parameters:
     AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
   PublicSubnetIds:
     Type: CommaDelimitedList
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-  AlbSecurityGroupId:
-    Type: AWS::EC2::SecurityGroup::Id
+  TargetGroupArn:
+    Type: String
+    Description: Target group from alb-ingress stack.
   EcsSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
   EcsTaskExecutionRoleArn:
@@ -54,7 +53,7 @@ Metadata:
   RailFlux:
     Module: ecs-monolith
     Profile: aws-baseline
-    LayoutVersion: m5-issue-46
+    LayoutVersion: m5-issue-47
     ResourceParity:
       request_serving_vcpu: 0.5
       request_serving_memory_gib: 1
@@ -73,44 +72,6 @@ Resources:
     Properties:
       LogGroupName: !Sub /railflux/${SessionName}/monolith
       RetentionInDays: 7
-
-  ApplicationLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Scheme: internet-facing
-      Type: application
-      Subnets: !Ref PublicSubnetIds
-      SecurityGroups:
-        - !Ref AlbSecurityGroupId
-      Tags:
-        - Key: Name
-          Value: !Sub railflux-${SessionName}-alb
-
-  MonolithTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Port: !Ref AppPort
-      Protocol: HTTP
-      VpcId: !Ref VpcId
-      TargetType: ip
-      HealthCheckEnabled: true
-      HealthCheckPath: /health/ready
-      HealthCheckProtocol: HTTP
-      Matcher:
-        HttpCode: "200"
-      Tags:
-        - Key: Name
-          Value: !Sub railflux-${SessionName}-mono-tg
-
-  HttpListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 80
-      Protocol: HTTP
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref MonolithTargetGroup
 
   MonolithTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -166,7 +127,6 @@ Resources:
 
   MonolithService:
     Type: AWS::ECS::Service
-    DependsOn: HttpListener
     Properties:
       ServiceName: !Sub railflux-${SessionName}-monolith
       Cluster: !Ref EcsCluster
@@ -183,15 +143,13 @@ Resources:
       LoadBalancers:
         - ContainerName: monolith
           ContainerPort: !Ref AppPort
-          TargetGroupArn: !Ref MonolithTargetGroup
+          TargetGroupArn: !Ref TargetGroupArn
 
 Outputs:
   EcsClusterName:
     Value: !Ref EcsCluster
-  AlbDnsName:
-    Value: !GetAtt ApplicationLoadBalancer.DNSName
-  MonolithTargetGroupArn:
-    Value: !Ref MonolithTargetGroup
+  TargetGroupArn:
+    Value: !Ref TargetGroupArn
   TaskCpu:
     Value: !Ref TaskCpu
   TaskMemory:

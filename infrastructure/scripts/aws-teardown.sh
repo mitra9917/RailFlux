@@ -97,6 +97,8 @@ case "${PROFILE}" in
   modules)
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
+    delete_module_stack alb-optimized
+    delete_module_stack alb-baseline
     delete_module_stack rds-replica
     delete_module_stack elasticache
     delete_module_stack rds
@@ -108,6 +110,8 @@ case "${PROFILE}" in
     delete_stack aws-optimized
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
+    delete_module_stack alb-optimized
+    delete_module_stack alb-baseline
     delete_module_stack rds-replica
     delete_module_stack elasticache
     delete_module_stack rds

@@ -1,17 +1,15 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux ALB, target groups, origin restriction (M5 P3 layout stub).
-
-Parameters:
-  SessionName:
-    Type: String
+Description: >-
+  Baseline profile uses shared/alb-ingress.yaml (M5 #47). Deploy via
+  npm run aws:deploy:alb-baseline.
 
 Metadata:
   RailFlux:
-    Module: alb-ingress
-    LayoutVersion: m5-issue-41
+    Module: alb-ingress-alias
+    CanonicalTemplate: ../shared/alb-ingress.yaml
 
 Resources: {}
 
 Outputs:
-  Module:
-    Value: alb-ingress
+  Note:
+    Value: Use shared/alb-ingress.yaml with IngressProfile=aws-baseline
