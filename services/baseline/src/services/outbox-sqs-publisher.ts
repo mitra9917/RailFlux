@@ -4,6 +4,7 @@ import {
 } from '@railflux/shared';
 import {
   CreateQueueCommand,
+  PurgeQueueCommand,
   ReceiveMessageCommand,
   SQSClient,
   SendMessageCommand,
@@ -109,6 +110,17 @@ export async function publishBookingConfirmedOutboxToSqs(
   } finally {
     conn.release();
   }
+}
+
+/** Integration/CI queue name (separate from local dev `railflux-side-effects` worker). */
+export const INTEGRATION_SIDE_EFFECTS_QUEUE_NAME = 'railflux-side-effects-integration';
+
+/** Remove visible messages so tests are not affected by a running dev worker on the default queue. */
+export async function purgeSideEffectsQueue(
+  sqsClient: SQSClient,
+  queueUrl: string,
+): Promise<void> {
+  await sqsClient.send(new PurgeQueueCommand({ QueueUrl: queueUrl }));
 }
 
 /** Test/CI helper: ensure queue exists on ElasticMQ. */

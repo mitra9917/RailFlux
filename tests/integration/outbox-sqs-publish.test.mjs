@@ -5,23 +5,19 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { after, afterEach, before, describe, test } from 'node:test';
-import { SIDE_EFFECTS_QUEUE_NAME } from '@railflux/shared';
 import { createBookingApp } from '../../services/booking/dist/app.js';
 import { createPool, pingDatabase } from '@railflux/baseline/db.js';
+import { receiveSideEffectsMessage } from '@railflux/baseline/services/outbox-sqs-publisher.js';
 import {
-  createSideEffectsSqsClient,
-  ensureSideEffectsQueue,
-  receiveSideEffectsMessage,
-} from '@railflux/baseline/services/outbox-sqs-publisher.js';
+  createIntegrationSideEffectsSqsClient,
+  prepareIntegrationSideEffectsQueue,
+  sideEffectsSqsEndpoint,
+} from '../helpers/side-effects-sqs-test.mjs';
 import { resetPaymentStubRun } from '../../services/baseline/dist/services/payment-stub.js';
 import { TC001_INVENTORY_3A_ID } from '../helpers/tc001-fixture.mjs';
 import { mysqlConfig, postBooking, primePaymentStubForSuccess } from '../helpers/booking-http.mjs';
 
 const requireIntegration = process.env.OUTBOX_SQS_INTEGRATION === '1';
-
-function sqsEndpoint() {
-  return process.env.SQS_ENDPOINT ?? 'http://127.0.0.1:9324';
-}
 
 describe('outbox SQS publish (M4 #35)', () => {
   let pool;
@@ -39,7 +35,7 @@ describe('outbox SQS publish (M4 #35)', () => {
 
   before(async () => {
     process.env.OUTBOX_DELIVERY = 'sqs';
-    process.env.SQS_ENDPOINT = sqsEndpoint();
+    process.env.SQS_ENDPOINT = sideEffectsSqsEndpoint();
     process.env.AWS_REGION = 'elasticmq-local';
 
     const mysql = mysqlConfig();
@@ -64,20 +60,15 @@ describe('outbox SQS publish (M4 #35)', () => {
     }
     if (!mysqlAvailable) return;
 
-    sqsClient = createSideEffectsSqsClient({
-      region: 'elasticmq-local',
-      endpoint: sqsEndpoint(),
-      queueUrl: 'http://placeholder',
-    });
+    sqsClient = createIntegrationSideEffectsSqsClient();
     try {
-      queueUrl = await ensureSideEffectsQueue(sqsClient, SIDE_EFFECTS_QUEUE_NAME);
-      process.env.SQS_SIDE_EFFECTS_QUEUE_URL = queueUrl;
+      queueUrl = await prepareIntegrationSideEffectsQueue(sqsClient, { purge: false });
       sqsAvailable = true;
     } catch (err) {
       sqsAvailable = false;
       if (requireIntegration) {
         throw new Error(
-          `OUTBOX_SQS_INTEGRATION=1 but ElasticMQ is unavailable at ${sqsEndpoint()}: ${err}`,
+          `OUTBOX_SQS_INTEGRATION=1 but ElasticMQ is unavailable at ${sideEffectsSqsEndpoint()}: ${err}`,
         );
       }
       return;
@@ -115,6 +106,13 @@ describe('outbox SQS publish (M4 #35)', () => {
     );
     const [bookingRows] = await pool.query(`SELECT id FROM bookings WHERE run_id = ?`, [runId]);
     for (const row of bookingRows) {
+      const [outboxRows] = await pool.query(
+        `SELECT event_id AS eventId FROM outbox_events WHERE aggregate_id = ?`,
+        [row.id],
+      );
+      for (const o of outboxRows) {
+        await pool.query(`DELETE FROM processed_events WHERE event_id = ?`, [o.eventId]);
+      }
       await pool.query(`DELETE FROM outbox_events WHERE aggregate_id = ?`, [row.id]);
       await pool.query(`DELETE FROM payments WHERE booking_id = ?`, [row.id]);
       await pool.query(`DELETE FROM booking_passengers WHERE booking_id = ?`, [row.id]);
@@ -135,6 +133,7 @@ describe('outbox SQS publish (M4 #35)', () => {
   test('confirmed booking publishes BOOKING_CONFIRMED message to side-effects queue', async (t) => {
     if (!skipUnlessReady(t)) return;
 
+    await prepareIntegrationSideEffectsQueue(sqsClient);
     await primePaymentStubForSuccess();
     const idempotencyKey = randomUUID();
     const body = {

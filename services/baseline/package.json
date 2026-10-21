@@ -37,6 +37,10 @@
       "types": "./dist/services/outbox-sqs-publisher.d.ts",
       "default": "./dist/services/outbox-sqs-publisher.js"
     },
+    "./services/booking-side-effect-worker.js": {
+      "types": "./dist/services/booking-side-effect-worker.d.ts",
+      "default": "./dist/services/booking-side-effect-worker.js"
+    },
     "./middleware/synthetic-jwt.js": {
       "types": "./dist/middleware/synthetic-jwt.d.ts",
       "default": "./dist/middleware/synthetic-jwt.js"

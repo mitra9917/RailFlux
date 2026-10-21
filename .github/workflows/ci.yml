@@ -153,6 +153,11 @@ jobs:
           OUTBOX_SQS_INTEGRATION: "1"
         run: npm run test:outbox-sqs
 
+      - name: TC-010 side-effect duplicate (worker dedupe)
+        env:
+          TC010_INTEGRATION: "1"
+        run: npm run test:tc010
+
       - name: GET booking status after commit (TC-009)
         run: npm run test:get-booking
 
