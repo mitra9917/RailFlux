@@ -20,6 +20,29 @@ railflux_stack_name() {
   esac
 }
 
+railflux_module_stack_name() {
+  local module="$1"
+  local session="$2"
+  case "${module}" in
+    network) echo "railflux-network-${session}" ;;
+    iam) echo "railflux-iam-${session}" ;;
+    *)
+      echo "Unknown module: ${module}" >&2
+      return 1
+      ;;
+  esac
+}
+
+railflux_cloudfront_origin_prefix_list_id() {
+  local region="${1:-${RAILFLUX_APP_REGION}}"
+  railflux_require_aws_cli
+  aws ec2 describe-managed-prefix-lists \
+    --region "${region}" \
+    --filters "Name=prefix-list-name,Values=com.amazonaws.global.cloudfront.origin-facing" \
+    --query 'PrefixLists[0].PrefixListId' \
+    --output text
+}
+
 railflux_template_for_profile() {
   local profile="$1"
   case "${profile}" in

@@ -9,10 +9,10 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-teardown.sh --profile <aws-baseline|aws-optimized|aws-edge-waf|all> --session NAME
+  aws-teardown.sh --profile <aws-baseline|aws-optimized|aws-edge-waf|modules|all> --session NAME
 
 Deletes the session stack in the correct region. Use profile=all to remove
-application stack (ap-south-1) and edge WAF stack (us-east-1) for the session.
+application stacks, shared network/iam modules (ap-south-1), and edge WAF (us-east-1).
 
 Options:
   --no-preflight   Skip sts get-caller-identity check.
@@ -76,13 +76,33 @@ delete_stack() {
   fi
 }
 
+delete_module_stack() {
+  local module="$1"
+  local stack
+  stack="$(railflux_module_stack_name "${module}" "${SESSION}")"
+  if aws cloudformation describe-stacks --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}" >/dev/null 2>&1; then
+    echo "==> Deleting ${stack} (${RAILFLUX_APP_REGION})"
+    aws cloudformation delete-stack --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}"
+    aws cloudformation wait stack-delete-complete --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}"
+    echo "    deleted ${stack}"
+  else
+    echo "==> Skip ${stack} (not found in ${RAILFLUX_APP_REGION})"
+  fi
+}
+
 case "${PROFILE}" in
   aws-baseline | aws-optimized | aws-edge-waf)
     delete_stack "${PROFILE}"
     ;;
+  modules)
+    delete_module_stack network
+    delete_module_stack iam
+    ;;
   all)
     delete_stack aws-baseline
     delete_stack aws-optimized
+    delete_module_stack network
+    delete_module_stack iam
     delete_stack aws-edge-waf
     ;;
   *)

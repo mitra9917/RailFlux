@@ -13,7 +13,9 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 
 | Path | Role |
 | --- | --- |
-| `shared/network.yaml` | VPC, subnets, routes, security groups (M5 #42+) |
+| `shared/network.yaml` | VPC, subnets, routes, security groups (**M5 #42**) |
+| `shared/iam-task-roles.yaml` | ECS execution + per-service task roles (**M5 #42**) |
+| `shared/iam-matrix.md` | ST-005 prep — queue access matrix |
 | `shared/session-bootstrap.yaml` | Budget hooks, ECR, artifact buckets (M5 P4/P5) |
 | `baseline/rds-primary.yaml` | Single-AZ MySQL (M5 P2) |
 | `baseline/ecs-monolith.yaml` | Baseline Fargate service (M5 P3) |
@@ -53,6 +55,8 @@ From repository root:
 | `npm run aws:deploy:baseline` | Deploy `aws-baseline` root (pass `--session`, tags) |
 | `npm run aws:deploy:optimized` | Deploy `aws-optimized` root |
 | `npm run aws:deploy:edge-waf` | Deploy CloudFront WAF stub in `us-east-1` |
+| `npm run aws:deploy:network` | VPC + security groups for a session |
+| `npm run aws:deploy:iam` | Task roles (pass `--deployment-profile`) |
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).
