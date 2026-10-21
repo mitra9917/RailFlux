@@ -22,11 +22,11 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 1. Deploy shared budget/artifact/ECR resources if absent.
 2. Build immutable images and record digests.
 3. Deploy network, RDS primary, and IAM (`npm run aws:deploy:network`, then `aws:deploy:rds`, then `aws:deploy:iam`). Verify schema with `npm run aws:smoke:rds-migrate -- --session SESSION`.
-4. For optimized sessions only, deploy queue/DLQ; omit them from the Stage 1 baseline smoke profile.
+4. For optimized sessions only, deploy queue/DLQ (`npm run aws:deploy:sqs-worker -- --session SESSION --expires-at …`), then **re-deploy IAM** with `--deployment-profile aws-optimized` so booking/worker task roles receive SQS ARNs. Baseline smoke omits the queue.
 5. Deploy RDS, migrate schema, restore fixture, and record checksum.
 6. For optimized sessions only, deploy read replica (`npm run aws:deploy:rds-replica`) and ElastiCache (`npm run aws:deploy:elasticache`). Record cache class and `expires_at` in the run manifest ([elasticache-test-window.md](../../infrastructure/cloudformation/optimized/elasticache-test-window.md)). Wire **read** tasks to replica + `REDIS_URL`; **booking** stays on primary ([db-routing.md](../../infrastructure/cloudformation/optimized/db-routing.md)).
 7. Deploy ALB ingress (`npm run aws:deploy:alb-baseline` or `aws:deploy:alb-optimized`) with ACM cert and origin verify header. When the manifest sets `waf_mode: on`, deploy edge WAF first (`npm run aws:deploy:edge-waf`), then pass `--waf-mode on` to the ALB module.
-8. Deploy ECS task definitions/services wired to the ALB target group (`aws:deploy:ecs-baseline` / `aws:deploy:ecs-optimized`). Smoke with `npm run aws:smoke:ecs-alb`.
+8. Deploy ECS task definitions/services wired to the ALB target group (`aws:deploy:ecs-baseline` / `aws:deploy:ecs-optimized`). Optimized deploy requires `--container-image-worker` when the sqs-worker stack exists. Smoke with `npm run aws:smoke:ecs-alb` and `npm run aws:smoke:sqs-worker`.
 9. Deploy private S3/CloudFront frontend (`npm run aws:deploy:cloudfront-baseline` or `cloudfront-optimized`) with the same `--origin-header-value` as ALB; pass `--waf-mode on` when the edge WAF stack exists.
 10. Deploy minimal dashboard/alarms and log retention.
 

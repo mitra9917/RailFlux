@@ -29,22 +29,28 @@ function required(name: string, value: string | undefined): string {
 export function loadSideEffectsSqsConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): SideEffectsSqsConfig {
+  const queueUrl = required('SQS_SIDE_EFFECTS_QUEUE_URL', env.SQS_SIDE_EFFECTS_QUEUE_URL);
+  const region = env.AWS_REGION ?? env.AWS_DEFAULT_REGION ?? 'elasticmq-local';
+  const endpoint = env.SQS_ENDPOINT?.trim() ?? '';
   return {
-    region: env.AWS_REGION ?? 'elasticmq-local',
-    endpoint: required('SQS_ENDPOINT', env.SQS_ENDPOINT),
-    queueUrl: required('SQS_SIDE_EFFECTS_QUEUE_URL', env.SQS_SIDE_EFFECTS_QUEUE_URL),
+    region,
+    endpoint,
+    queueUrl,
   };
 }
 
 export function createSideEffectsSqsClient(config: SideEffectsSqsConfig): SQSClient {
-  return new SQSClient({
-    region: config.region,
-    endpoint: config.endpoint,
-    credentials: {
-      accessKeyId: envLocalAccessKey(),
-      secretAccessKey: envLocalSecretKey(),
-    },
-  });
+  if (config.endpoint) {
+    return new SQSClient({
+      region: config.region,
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: envLocalAccessKey(),
+        secretAccessKey: envLocalSecretKey(),
+      },
+    });
+  }
+  return new SQSClient({ region: config.region });
 }
 
 function envLocalAccessKey(): string {

@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
-  RailFlux aws-optimized ECS Fargate edge (ALB) + internal read/booking (M5 #46).
+  RailFlux aws-optimized ECS Fargate edge, read/booking, and SQS worker (M5 #46/#49).
 
 Parameters:
   SessionName:
@@ -22,6 +22,8 @@ Parameters:
     Type: String
   BookingTaskRoleArn:
     Type: String
+  WorkerTaskRoleArn:
+    Type: String
   EdgeTaskRoleArn:
     Type: String
   ContainerImageEdge:
@@ -30,6 +32,15 @@ Parameters:
     Type: String
   ContainerImageBooking:
     Type: String
+  ContainerImageWorker:
+    Type: String
+    Default: ""
+  SideEffectsQueueUrl:
+    Type: String
+    Default: ""
+  SideEffectsDlqUrl:
+    Type: String
+    Default: ""
   DbPrimaryEndpoint:
     Type: String
   DbReplicaEndpoint:
@@ -73,16 +84,32 @@ Parameters:
   BookingTaskMemory:
     Type: String
     Default: "512"
+  WorkerTaskCpu:
+    Type: String
+    Default: "256"
+  WorkerTaskMemory:
+    Type: String
+    Default: "512"
+  WorkerDesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 0
+    MaxValue: 4
 
 Conditions:
   HasReplica: !Not [!Equals [!Ref DbReplicaEndpoint, ""]]
   HasRedis: !Not [!Equals [!Ref RedisUrl, ""]]
+  HasSideEffectsQueue: !Not [!Equals [!Ref SideEffectsQueueUrl, ""]]
+  HasSideEffectsDlq: !Not [!Equals [!Ref SideEffectsDlqUrl, ""]]
+  DeployWorker: !And
+    - !Condition HasSideEffectsQueue
+    - !Not [!Equals [!Ref ContainerImageWorker, ""]]
 
 Metadata:
   RailFlux:
     Module: ecs-services
     Profile: aws-optimized
-    LayoutVersion: m5-issue-47
+    LayoutVersion: m5-issue-49
 
 Resources:
   EcsCluster:
@@ -139,6 +166,13 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /railflux/${SessionName}/booking
+      RetentionInDays: 7
+
+  WorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: DeployWorker
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/worker
       RetentionInDays: 7
 
   ReadTaskDefinition:
@@ -231,6 +265,21 @@ Resources:
               Value: !Ref DbName
             - Name: SYNTHETIC_JWT_SECRET
               Value: !Ref SyntheticJwtSecret
+            - !If
+              - HasSideEffectsQueue
+              - Name: OUTBOX_DELIVERY
+                Value: sqs
+              - !Ref AWS::NoValue
+            - !If
+              - HasSideEffectsQueue
+              - Name: SQS_SIDE_EFFECTS_QUEUE_URL
+                Value: !Ref SideEffectsQueueUrl
+              - !Ref AWS::NoValue
+            - !If
+              - HasSideEffectsQueue
+              - Name: AWS_REGION
+                Value: !Ref AWS::Region
+              - !Ref AWS::NoValue
           Secrets:
             - Name: MYSQL_USER
               ValueFrom: !Sub "${DbMasterSecretArn}:username::"
@@ -251,6 +300,56 @@ Resources:
             Timeout: 5
             Retries: 3
             StartPeriod: 60
+
+  WorkerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: DeployWorker
+    Properties:
+      Family: !Sub railflux-${SessionName}-worker
+      Cpu: !Ref WorkerTaskCpu
+      Memory: !Ref WorkerTaskMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref EcsTaskExecutionRoleArn
+      TaskRoleArn: !Ref WorkerTaskRoleArn
+      ContainerDefinitions:
+        - Name: worker
+          Image: !Ref ContainerImageWorker
+          Essential: true
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: MYSQL_HOST
+              Value: !Ref DbPrimaryEndpoint
+            - Name: MYSQL_PORT
+              Value: "3306"
+            - Name: MYSQL_DATABASE
+              Value: !Ref DbName
+            - Name: SYNTHETIC_JWT_SECRET
+              Value: !Ref SyntheticJwtSecret
+            - Name: SQS_SIDE_EFFECTS_QUEUE_URL
+              Value: !Ref SideEffectsQueueUrl
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: WORKER_SQS_WAIT_SECONDS
+              Value: "5"
+            - !If
+              - HasSideEffectsDlq
+              - Name: SQS_SIDE_EFFECTS_DLQ_URL
+                Value: !Ref SideEffectsDlqUrl
+              - !Ref AWS::NoValue
+          Secrets:
+            - Name: MYSQL_USER
+              ValueFrom: !Sub "${DbMasterSecretArn}:username::"
+            - Name: MYSQL_PASSWORD
+              ValueFrom: !Sub "${DbMasterSecretArn}:password::"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref WorkerLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: worker
 
   EdgeTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -328,6 +427,22 @@ Resources:
           SecurityGroups:
             - !Ref EcsSecurityGroupId
 
+  WorkerService:
+    Type: AWS::ECS::Service
+    Condition: DeployWorker
+    Properties:
+      ServiceName: !Sub railflux-${SessionName}-worker
+      Cluster: !Ref EcsCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref WorkerDesiredCount
+      TaskDefinition: !Ref WorkerTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PublicSubnetIds
+          SecurityGroups:
+            - !Ref EcsSecurityGroupId
+
   EdgeService:
     Type: AWS::ECS::Service
     DependsOn:
@@ -362,3 +477,9 @@ Outputs:
     Value: !Ref DbPrimaryEndpoint
   ReadUsesReplicaWhenSet:
     Value: !If [HasReplica, !Ref DbReplicaEndpoint, !Ref DbPrimaryEndpoint]
+  WorkerServiceName:
+    Condition: DeployWorker
+    Value: !GetAtt WorkerService.Name
+  SideEffectsQueueUrl:
+    Condition: HasSideEffectsQueue
+    Value: !Ref SideEffectsQueueUrl
