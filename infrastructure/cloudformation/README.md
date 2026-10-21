@@ -17,7 +17,7 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `shared/iam-task-roles.yaml` | ECS execution + per-service task roles (**M5 #42**) |
 | `shared/iam-matrix.md` | ST-005 prep — queue access matrix |
 | `shared/session-bootstrap.yaml` | Budget hooks, ECR, artifact buckets (M5 P4/P5) |
-| `baseline/rds-primary.yaml` | Single-AZ MySQL (M5 P2) |
+| `shared/rds-primary.yaml` | Single-AZ MySQL primary (**M5 #43**) |
 | `baseline/ecs-monolith.yaml` | Baseline Fargate service (M5 P3) |
 | `baseline/alb-ingress.yaml` | ALB + origin restriction (M5 P3) |
 | `optimized/rds-replica.yaml` | Read replica (M5 P2) |
@@ -57,6 +57,8 @@ From repository root:
 | `npm run aws:deploy:edge-waf` | Deploy CloudFront WAF stub in `us-east-1` |
 | `npm run aws:deploy:network` | VPC + security groups for a session |
 | `npm run aws:deploy:iam` | Task roles (pass `--deployment-profile`) |
+| `npm run aws:deploy:rds` | RDS primary (requires network stack) |
+| `npm run aws:smoke:rds-migrate` | Run migrations against session RDS |
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).

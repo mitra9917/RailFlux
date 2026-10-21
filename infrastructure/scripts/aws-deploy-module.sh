@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -105,9 +105,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam) ;;
+  network | iam | rds) ;;
   *)
-    echo "Module must be network or iam." >&2
+    echo "Module must be network, iam, or rds." >&2
     exit 1
     ;;
 esac
@@ -151,6 +151,12 @@ case "${MODULE}" in
   iam)
     TEMPLATE="${RAILFLUX_CFN_DIR}/shared/iam-task-roles.yaml"
     TAG_PROFILE="${DEPLOYMENT_PROFILE}"
+    if [[ -z "${DB_SECRET_ARN}" ]]; then
+      RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
+      if aws cloudformation describe-stacks --stack-name "${RDS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+        DB_SECRET_ARN="$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
+      fi
+    fi
     PARAM_OVERRIDES=(
       "SessionName=${SESSION}"
       "DeploymentProfile=${DEPLOYMENT_PROFILE}"
@@ -158,6 +164,25 @@ case "${MODULE}" in
       "SideEffectsDlqArn=${SIDE_EFFECTS_DLQ_ARN}"
       "DbSecretArn=${DB_SECRET_ARN}"
     )
+    ;;
+  rds)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/shared/rds-primary.yaml"
+    railflux_require_network_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    SUBNETS="$(railflux_cfn_output "${NETWORK_STACK}" PrivateDataSubnetIds)"
+    RDS_SG="$(railflux_cfn_output "${NETWORK_STACK}" RdsSecurityGroupId)"
+    if [[ -z "${SUBNETS}" || "${SUBNETS}" == None || -z "${RDS_SG}" || "${RDS_SG}" == None ]]; then
+      echo "Network stack ${NETWORK_STACK} is missing PrivateDataSubnetIds or RdsSecurityGroupId outputs." >&2
+      exit 1
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "PrivateDataSubnetIds=${SUBNETS}"
+      "RdsSecurityGroupId=${RDS_SG}"
+    )
+    if [[ -n "${DB_SECRET_ARN}" ]]; then
+      echo "Note: --db-secret-arn is ignored for rds module (RDS manages master secret)." >&2
+    fi
     ;;
 esac
 

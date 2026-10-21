@@ -40,7 +40,7 @@ Metadata:
       - shared/session-bootstrap.yaml
       - shared/network.yaml
       - shared/iam-task-roles.yaml
-      - optimized/rds-primary.yaml
+      - shared/rds-primary.yaml
       - optimized/rds-replica.yaml
       - optimized/elasticache.yaml
       - optimized/sqs-worker.yaml

@@ -21,7 +21,7 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 
 1. Deploy shared budget/artifact/ECR resources if absent.
 2. Build immutable images and record digests.
-3. Deploy network and security groups (`npm run aws:deploy:network`, then `npm run aws:deploy:iam` with the session profile).
+3. Deploy network, RDS primary, and IAM (`npm run aws:deploy:network`, then `aws:deploy:rds`, then `aws:deploy:iam`). Verify schema with `npm run aws:smoke:rds-migrate -- --session SESSION`.
 4. For optimized sessions only, deploy queue/DLQ; omit them from the Stage 1 baseline smoke profile.
 5. Deploy RDS, migrate schema, restore fixture, and record checksum.
 6. For optimized sessions only, deploy read replica and ElastiCache.

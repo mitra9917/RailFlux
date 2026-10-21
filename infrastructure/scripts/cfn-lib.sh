@@ -26,6 +26,7 @@ railflux_module_stack_name() {
   case "${module}" in
     network) echo "railflux-network-${session}" ;;
     iam) echo "railflux-iam-${session}" ;;
+    rds) echo "railflux-rds-${session}" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1
@@ -91,6 +92,27 @@ railflux_preflight_caller() {
   railflux_require_aws_cli
   if ! aws sts get-caller-identity >/dev/null 2>&1; then
     echo "AWS credentials are not valid. Configure SSO or env credentials." >&2
+    exit 1
+  fi
+}
+
+railflux_cfn_output() {
+  local stack_name="$1"
+  local output_key="$2"
+  local region="${3:-${RAILFLUX_APP_REGION}}"
+  aws cloudformation describe-stacks \
+    --stack-name "${stack_name}" \
+    --region "${region}" \
+    --query "Stacks[0].Outputs[?OutputKey=='${output_key}'].OutputValue | [0]" \
+    --output text
+}
+
+railflux_require_network_stack() {
+  local session="$1"
+  local stack
+  stack="$(railflux_module_stack_name network "${session}")"
+  if ! aws cloudformation describe-stacks --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}" >/dev/null 2>&1; then
+    echo "Network stack ${stack} not found. Run aws:deploy:network first." >&2
     exit 1
   fi
 }

@@ -40,7 +40,7 @@ Metadata:
       - shared/session-bootstrap.yaml
       - shared/network.yaml
       - shared/iam-task-roles.yaml
-      - baseline/rds-primary.yaml
+      - shared/rds-primary.yaml
       - baseline/ecs-monolith.yaml
       - baseline/alb-ingress.yaml
       - shared/cloudfront-oac.yaml
