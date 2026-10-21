@@ -19,7 +19,7 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 
 ## Deploy
 
-1. Deploy shared budget/artifact/ECR resources if absent.
+1. Deploy account budgets once (`npm run aws:deploy:account-budgets -- --budget-alert-email YOU@example.com`). Confirm email subscription in inbox. Then shared artifact/ECR resources if absent (M5 P5).
 2. Build immutable images and record digests.
 3. Deploy network, RDS primary, and IAM (`npm run aws:deploy:network`, then `aws:deploy:rds`, then `aws:deploy:iam`). Verify schema with `npm run aws:smoke:rds-migrate -- --session SESSION`.
 4. For optimized sessions only, deploy queue/DLQ (`npm run aws:deploy:sqs-worker -- --session SESSION --expires-at …`), then **re-deploy IAM** with `--deployment-profile aws-optimized` so booking/worker task roles receive SQS ARNs. Baseline smoke omits the queue.

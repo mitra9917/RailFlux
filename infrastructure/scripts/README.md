@@ -14,9 +14,33 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-ecs-alb-smoke.sh` | Wait for ALB target group healthy (M5 #46) |
 | `aws-sqs-worker-smoke.sh` | SQS/DLQ + worker ECS smoke (M5 #49) |
 | `aws-observability-smoke.sh` | Dashboard + alarms smoke (M5 #50) |
+| `aws-account-budgets-smoke.sh` | Account budget notifications (M5 #51) |
 | `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 
 Default application region: **`ap-south-1`**. CloudFront WAF edge stack: **`us-east-1`**.
 
 Run from repository root via `npm run cfn:validate` and `npm run aws:deploy:*`.
+
+## AWS login (CLI vs Cursor MCP)
+
+Two different auth paths:
+
+| Path | Used for | RailFlux account |
+| --- | --- | --- |
+| **Cursor AWS MCP** (`.cursor/mcp.json` → OAuth) | Agent `aws___run_script` in chat | **856073125851** — already works when MCP shows **ready** |
+| **AWS CLI profile `railflux`** | `npm run aws:deploy:*`, your terminal | Same account, IAM user **`railflux-cli`** |
+
+Deploy scripts auto-set **`AWS_PROFILE=railflux`** and **`AWS_DEFAULT_REGION=ap-south-1`** via `aws-env.sh` (override with `RAILFLUX_AWS_PROFILE`).
+
+Verify CLI before deploy:
+
+```bash
+export AWS_PROFILE=railflux
+aws sts get-caller-identity
+# Account should be 856073125851
+```
+
+If MCP shows **needs auth** in Cursor: **Settings → MCP → aws → Sign in / Reconnect** (OAuth to AWS MCP, not the same as CLI keys).
+
+Do not use the `[default]` CLI profile for RailFlux—those access keys are often expired; use **`railflux`** only.

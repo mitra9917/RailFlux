@@ -2,6 +2,9 @@
 # Shared helpers for RailFlux CloudFormation wrappers (M5 #41).
 set -euo pipefail
 
+# shellcheck source=aws-env.sh
+source "$(dirname "${BASH_SOURCE[0]}")/aws-env.sh"
+
 RAILFLUX_APP_REGION="${RAILFLUX_APP_REGION:-ap-south-1}"
 RAILFLUX_EDGE_REGION="${RAILFLUX_EDGE_REGION:-us-east-1}"
 RAILFLUX_CFN_DIR="${RAILFLUX_CFN_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../cloudformation" && pwd)}"
@@ -37,6 +40,7 @@ railflux_module_stack_name() {
     cloudfront-optimized) echo "railflux-cloudfront-optimized-${session}" ;;
     sqs-worker) echo "railflux-sqs-worker-${session}" ;;
     observability) echo "railflux-observability-${session}" ;;
+    account-budgets) echo "railflux-account-budgets" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1
@@ -101,7 +105,11 @@ railflux_require_aws_cli() {
 railflux_preflight_caller() {
   railflux_require_aws_cli
   if ! aws sts get-caller-identity >/dev/null 2>&1; then
-    echo "AWS credentials are not valid. Configure SSO or env credentials." >&2
+    echo "AWS credentials failed for profile=${AWS_PROFILE:-<unset>} region=${AWS_DEFAULT_REGION}." >&2
+    echo "RailFlux expects ~/.aws/credentials profile [railflux] on account 856073125851 (user railflux-cli)." >&2
+    echo "Fix: export AWS_PROFILE=railflux && aws sts get-caller-identity" >&2
+    echo "Or set RAILFLUX_AWS_PROFILE. Your [default] profile keys may be expired—do not use default for this repo." >&2
+    echo "Cursor AWS MCP (OAuth) is separate; deploy scripts use the AWS CLI profile above." >&2
     exit 1
   fi
 }

@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux session bootstrap — budgets, ECR, artifacts (M5 P4/P5 layout stub).
+Description: >-
+  Session bootstrap alias — account budgets live in shared/account-budgets.yaml (M5 #51).
+  ECR/artifact buckets remain M5 P5.
 
 Parameters:
   SessionName:
@@ -8,7 +10,8 @@ Parameters:
 Metadata:
   RailFlux:
     Module: session-bootstrap
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-51
+    CanonicalBudgetTemplate: account-budgets.yaml
 
 Resources: {}
 

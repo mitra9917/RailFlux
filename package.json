@@ -75,6 +75,8 @@
     "aws:deploy:cloudfront-baseline": "./infrastructure/scripts/aws-deploy-module.sh cloudfront-baseline",
     "aws:deploy:cloudfront-optimized": "./infrastructure/scripts/aws-deploy-module.sh cloudfront-optimized",
     "aws:deploy:observability": "./infrastructure/scripts/aws-deploy-module.sh observability",
+    "aws:deploy:account-budgets": "./infrastructure/scripts/aws-deploy-module.sh account-budgets",
+    "aws:smoke:account-budgets": "./infrastructure/scripts/aws-account-budgets-smoke.sh",
     "aws:smoke:observability": "./infrastructure/scripts/aws-observability-smoke.sh",
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "db:up": "./scripts/db-up.sh",
