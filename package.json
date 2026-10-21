@@ -70,6 +70,8 @@
     "aws:deploy:ecs-baseline": "./infrastructure/scripts/aws-deploy-module.sh ecs-baseline",
     "aws:deploy:ecs-optimized": "./infrastructure/scripts/aws-deploy-module.sh ecs-optimized",
     "aws:smoke:ecs-alb": "./infrastructure/scripts/aws-ecs-alb-smoke.sh",
+    "aws:deploy:cloudfront-baseline": "./infrastructure/scripts/aws-deploy-module.sh cloudfront-baseline",
+    "aws:deploy:cloudfront-optimized": "./infrastructure/scripts/aws-deploy-module.sh cloudfront-optimized",
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
