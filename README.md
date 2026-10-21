@@ -50,6 +50,7 @@ Credits may exclude taxes, domains, support plans, marketplace products, or part
 - [Documentation index](docs/INDEX.md)
 - [Public IRCTC evidence](docs/research/irctc-public-evidence.md)
 - [Assumptions and limitations](docs/assumptions-and-limitations.md)
+- [Local Docker profiles (baseline vs optimized)](docs/local-docker-profiles.md)
 - [Unified architecture](docs/architecture/system-overview.md)
 - [Baseline architecture](docs/architecture/baseline.md)
 - [Optimized AWS architecture](docs/architecture/optimized.md)

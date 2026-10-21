@@ -16,4 +16,4 @@ if [[ "$ready_code" != "200" ]]; then
   exit 1
 fi
 
-echo "baseline health ok"
+echo "${HEALTH_OK_MESSAGE:-API health ok}"

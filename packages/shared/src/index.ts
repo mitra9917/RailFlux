@@ -12,5 +12,6 @@ export * from './create-booking.js';
 export * from './payment-stub-config.js';
 export * from './payment-stub.js';
 export * from './booking-outbox.js';
+export * from './service-root.js';
 export * from './get-booking.js';
 export * from './simulated-pnr.js';

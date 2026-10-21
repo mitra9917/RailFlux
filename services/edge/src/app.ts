@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { RailFluxError } from '@railflux/shared';
+import { buildServiceRootBody, RailFluxError } from '@railflux/shared';
 import type { EdgeServiceConfig } from './config.js';
 import { createEdgeHealthRouter } from './health.js';
 import { createUpstreamProxy, pickUpstreamOrigin } from './upstream-proxy.js';
@@ -26,6 +26,10 @@ export function createEdgeApp(config: EdgeServiceConfig) {
   app.disable('x-powered-by');
 
   app.use(createEdgeHealthRouter(config));
+
+  app.get('/', (_req, res) => {
+    res.json(buildServiceRootBody({ service: 'edge', architecture: 'optimized-edge' }));
+  });
 
   app.use('/v1', createEdgeV1Router(config));
 
