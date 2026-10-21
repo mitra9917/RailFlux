@@ -43,7 +43,7 @@ All items in [definition-of-done.md](definition-of-done.md) must be satisfied, w
 | **M1** | Contracts & repository scaffold | Week 1 | **Done** — [M1 acceptance](milestones/M1-acceptance.md) |
 | **M2** | Baseline read path (local) | Week 1–2 | **Done** — [M2 acceptance](milestones/M2-acceptance.md) |
 | **M3** | Baseline booking correctness | Week 2 | **Done** — [M3 acceptance](milestones/M3-acceptance.md) |
-| **M4** | Optimized local profile | Week 3 | Read/booking split, Redis, queue, worker, DLQ, parity + TC-002/TC-010 |
+| **M4** | Optimized local profile | Week 3 | **Done** — [M4 acceptance](milestones/M4-acceptance.md) |
 | **M5** | AWS infrastructure & observability | Week 4 | CloudFormation profiles, deploy/teardown, budgets, smoke session |
 | **M6** | Experiment engine & load tests | Week 5 (early) | k6 workloads, controller CLI, manifests, artifact export, preflight |
 | **M7** | Campaign, analysis & delivery | Week 5–6 | Calibration, principal pairs, stats, report, reproducibility audit |
@@ -148,7 +148,7 @@ Standard GitHub labels (`enhancement`, `documentation`, `test`) are applied wher
 | P3 | Async path | Outbox publish, ElasticMQ, worker, processed_events, DLQ |
 | P4 | Compose | `docker-compose.optimized.yml`, env profiles |
 | P5 | Parity | Contract tests baseline vs optimized |
-| P6 | Gate | M4 acceptance |
+| P6 | Gate | M4 acceptance (`npm run gate:m4`) |
 
 ---
 
