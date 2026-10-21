@@ -95,6 +95,7 @@ case "${PROFILE}" in
     delete_stack "${PROFILE}"
     ;;
   modules)
+    delete_module_stack rds-replica
     delete_module_stack rds
     delete_module_stack iam
     delete_module_stack network
@@ -102,6 +103,7 @@ case "${PROFILE}" in
   all)
     delete_stack aws-baseline
     delete_stack aws-optimized
+    delete_module_stack rds-replica
     delete_module_stack rds
     delete_module_stack iam
     delete_module_stack network
