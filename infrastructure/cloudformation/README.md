@@ -24,7 +24,7 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `optimized/elasticache.yaml` | Redis test window (**M5 #45**) |
 | `optimized/sqs-worker.yaml` | SQS, DLQ, worker service (M5 P3) |
 | `optimized/ecs-services.yaml` | Read, booking, edge Fargate (**M5 #46**, edge TG from #47) |
-| `shared/cloudfront-oac.yaml` | Private S3 + CloudFront API origin (M5 P3) |
+| `shared/cloudfront-oac.yaml` | Private S3 + CloudFront OAC + `/api/*` → ALB (**M5 #48**) |
 | `edge/waf.yaml` | **CloudFront-scoped WAF** (see below) |
 
 Module templates ship as **layout stubs** in M5 #41; nested resources land in follow-on issues. Root stacks record the planned module order in `Metadata.RailFlux.PlannedNestedStacks`.
@@ -60,6 +60,8 @@ From repository root:
 | `npm run aws:deploy:ecs-baseline` | Fargate monolith (requires alb-baseline) |
 | `npm run aws:deploy:ecs-optimized` | Split Fargate services (requires alb-optimized) |
 | `npm run aws:smoke:ecs-alb` | Wait for ALB target group healthy |
+| `npm run aws:deploy:cloudfront-baseline` | S3 + CloudFront (requires alb-baseline) |
+| `npm run aws:deploy:cloudfront-optimized` | S3 + CloudFront (requires alb-optimized) |
 | `npm run aws:deploy:network` | VPC + security groups for a session |
 | `npm run aws:deploy:iam` | Task roles (pass `--deployment-profile`) |
 | `npm run aws:deploy:rds` | RDS primary (requires network stack) |

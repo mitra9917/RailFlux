@@ -33,6 +33,8 @@ railflux_module_stack_name() {
     ecs-optimized) echo "railflux-ecs-optimized-${session}" ;;
     alb-baseline) echo "railflux-alb-baseline-${session}" ;;
     alb-optimized) echo "railflux-alb-optimized-${session}" ;;
+    cloudfront-baseline) echo "railflux-cloudfront-baseline-${session}" ;;
+    cloudfront-optimized) echo "railflux-cloudfront-optimized-${session}" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1

@@ -1,17 +1,182 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux private S3 frontend + CloudFront OAC (M5 P3 layout stub).
+Description: >-
+  RailFlux private S3 frontend + CloudFront OAC; /api/* forwards to ALB with origin
+  verify header (M5 #48). Direct S3 access is denied by bucket policy (DoD).
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  FrontendProfile:
+    Type: String
+    AllowedValues:
+      - aws-baseline
+      - aws-optimized
+  AlbDnsName:
+    Type: String
+    Description: Application load balancer DNS name (from alb-* module).
+  OriginVerifyHeaderName:
+    Type: String
+    Default: X-RailFlux-Origin-Verify
+  OriginVerifyHeaderValue:
+    Type: String
+    NoEcho: true
+    Description: Must match the secret configured on the ALB listener rule.
+  CloudFrontWebAclArn:
+    Type: String
+    Default: ""
+    Description: Optional us-east-1 CloudFront WAF ACL ARN (from edge stack).
+  DefaultRootObject:
+    Type: String
+    Default: index.html
+
+Conditions:
+  HasWebAcl: !Not [!Equals [!Ref CloudFrontWebAclArn, ""]]
 
 Metadata:
   RailFlux:
     Module: cloudfront-oac
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-48
+    DefinitionOfDone:
+      - S3 is private behind CloudFront OAC
+      - Direct S3 object GET without CloudFront is denied
 
-Resources: {}
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      BucketName: !Sub railflux-${SessionName}-frontend-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-frontend
+        - Key: RailFluxFrontendProfile
+          Value: !Ref FrontendProfile
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub railflux-${SessionName}-frontend-oac
+        Description: !Sub RailFlux ${SessionName} S3 OAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub RailFlux ${SessionName} frontend (${FrontendProfile})
+        DefaultRootObject: !Ref DefaultRootObject
+        HttpVersion: http2and3
+        WebACLId: !If [HasWebAcl, !Ref CloudFrontWebAclArn, !Ref AWS::NoValue]
+        Origins:
+          - Id: S3Frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: AlbApi
+            DomainName: !Ref AlbDnsName
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+            OriginCustomHeaders:
+              - HeaderName: !Ref OriginVerifyHeaderName
+                HeaderValue: !Ref OriginVerifyHeaderValue
+        DefaultCacheBehavior:
+          TargetOriginId: S3Frontend
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: AlbApi
+            ViewerProtocolPolicy: https-only
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachedMethods:
+              - GET
+              - HEAD
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+        PriceClass: PriceClass_200
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-cf
+        - Key: RailFluxFrontendProfile
+          Value: !Ref FrontendProfile
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: CloudFrontDistribution
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt FrontendBucket.Arn
+              - !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+          - Sid: AllowCloudFrontOacRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
 
 Outputs:
-  Module:
-    Value: cloudfront-oac
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  FrontendBucketArn:
+    Value: !GetAtt FrontendBucket.Arn
+  OriginAccessControlId:
+    Value: !GetAtt FrontendOriginAccessControl.Id
+  DistributionId:
+    Value: !Ref CloudFrontDistribution
+  DistributionDomainName:
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  DistributionUrl:
+    Description: HTTPS viewer URL (upload static assets to the bucket separately).
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+  ApiOriginPathPattern:
+    Value: /api/*

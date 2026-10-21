@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized|cloudfront-baseline|cloudfront-optimized> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -157,9 +157,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized) ;;
+  network | iam | rds | rds-replica | elasticache | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, elasticache, alb-baseline, alb-optimized, ecs-baseline, or ecs-optimized." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, or cloudfront-optimized." >&2
     exit 1
     ;;
 esac
@@ -396,6 +396,53 @@ case "${MODULE}" in
       "DbMasterSecretArn=$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
       "RedisUrl=${REDIS_URL}"
       "SyntheticJwtSecret=${SYNTHETIC_JWT_SECRET}"
+    )
+    ;;
+  cloudfront-baseline | cloudfront-optimized)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/shared/cloudfront-oac.yaml"
+    if [[ -z "${ORIGIN_HEADER_VALUE}" ]]; then
+      echo "cloudfront-* modules require --origin-header-value (same secret as alb-*)." >&2
+      exit 1
+    fi
+    CF_WAF_ARN=""
+    if [[ "${WAF_MODE}" == on ]]; then
+      EDGE_STACK="$(railflux_stack_name aws-edge-waf "${SESSION}")"
+      if aws cloudformation describe-stacks --stack-name "${EDGE_STACK}" --region "${RAILFLUX_EDGE_REGION}" >/dev/null 2>&1; then
+        CF_WAF_ARN="$(railflux_cfn_output "${EDGE_STACK}" CloudFrontWebAclArn "${RAILFLUX_EDGE_REGION}")"
+      else
+        echo "WafMode=on but edge stack ${EDGE_STACK} not found in ${RAILFLUX_EDGE_REGION}. Deploy aws:deploy:edge-waf first." >&2
+        exit 1
+      fi
+    fi
+    if [[ "${MODULE}" == cloudfront-baseline ]]; then
+      TAG_PROFILE="aws-baseline"
+      FRONTEND_PROFILE="aws-baseline"
+      ALB_STACK="$(railflux_module_stack_name alb-baseline "${SESSION}")"
+    else
+      TAG_PROFILE="aws-optimized"
+      FRONTEND_PROFILE="aws-optimized"
+      ALB_STACK="$(railflux_module_stack_name alb-optimized "${SESSION}")"
+    fi
+    if ! aws cloudformation describe-stacks --stack-name "${ALB_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      echo "ALB stack ${ALB_STACK} not found. Deploy alb module before cloudfront." >&2
+      exit 1
+    fi
+    ALB_DNS="$(railflux_cfn_output "${ALB_STACK}" AlbDnsName)"
+    ORIGIN_HEADER="$(railflux_cfn_output "${ALB_STACK}" OriginVerifyHeaderName)"
+    if [[ -z "${ALB_DNS}" || "${ALB_DNS}" == None ]]; then
+      echo "ALB stack ${ALB_STACK} missing AlbDnsName." >&2
+      exit 1
+    fi
+    if [[ -z "${ORIGIN_HEADER}" || "${ORIGIN_HEADER}" == None ]]; then
+      ORIGIN_HEADER="${ORIGIN_HEADER_NAME}"
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "FrontendProfile=${FRONTEND_PROFILE}"
+      "AlbDnsName=${ALB_DNS}"
+      "OriginVerifyHeaderName=${ORIGIN_HEADER}"
+      "OriginVerifyHeaderValue=${ORIGIN_HEADER_VALUE}"
+      "CloudFrontWebAclArn=${CF_WAF_ARN}"
     )
     ;;
 esac

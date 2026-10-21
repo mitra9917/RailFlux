@@ -95,6 +95,8 @@ case "${PROFILE}" in
     delete_stack "${PROFILE}"
     ;;
   modules)
+    delete_module_stack cloudfront-optimized
+    delete_module_stack cloudfront-baseline
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
     delete_module_stack alb-optimized
@@ -108,6 +110,8 @@ case "${PROFILE}" in
   all)
     delete_stack aws-baseline
     delete_stack aws-optimized
+    delete_module_stack cloudfront-optimized
+    delete_module_stack cloudfront-baseline
     delete_module_stack ecs-optimized
     delete_module_stack ecs-baseline
     delete_module_stack alb-optimized

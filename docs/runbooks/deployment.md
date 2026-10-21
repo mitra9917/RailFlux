@@ -27,7 +27,7 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 6. For optimized sessions only, deploy read replica (`npm run aws:deploy:rds-replica`) and ElastiCache (`npm run aws:deploy:elasticache`). Record cache class and `expires_at` in the run manifest ([elasticache-test-window.md](../../infrastructure/cloudformation/optimized/elasticache-test-window.md)). Wire **read** tasks to replica + `REDIS_URL`; **booking** stays on primary ([db-routing.md](../../infrastructure/cloudformation/optimized/db-routing.md)).
 7. Deploy ALB ingress (`npm run aws:deploy:alb-baseline` or `aws:deploy:alb-optimized`) with ACM cert and origin verify header. When the manifest sets `waf_mode: on`, deploy edge WAF first (`npm run aws:deploy:edge-waf`), then pass `--waf-mode on` to the ALB module.
 8. Deploy ECS task definitions/services wired to the ALB target group (`aws:deploy:ecs-baseline` / `aws:deploy:ecs-optimized`). Smoke with `npm run aws:smoke:ecs-alb`.
-9. Deploy private S3/CloudFront frontend (associate `CloudFrontWebAclArn` when WAF is on).
+9. Deploy private S3/CloudFront frontend (`npm run aws:deploy:cloudfront-baseline` or `cloudfront-optimized`) with the same `--origin-header-value` as ALB; pass `--waf-mode on` when the edge WAF stack exists.
 10. Deploy minimal dashboard/alarms and log retention.
 
 ## Validate

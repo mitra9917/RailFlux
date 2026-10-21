@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Baseline profile uses shared/cloudfront-oac.yaml (M5 #48). Deploy via
+  npm run aws:deploy:cloudfront-baseline.
+
+Metadata:
+  RailFlux:
+    Module: cloudfront-oac-alias
+    CanonicalTemplate: ../shared/cloudfront-oac.yaml
+
+Resources: {}
+
+Outputs:
+  Note:
+    Value: Use shared/cloudfront-oac.yaml with FrontendProfile=aws-baseline
