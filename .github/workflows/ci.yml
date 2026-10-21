@@ -133,6 +133,12 @@ jobs:
           SYNTHETIC_JWT_SECRET: edge-routing-test-secret
         run: npm run test:edge-routing
 
+      - name: Baseline vs optimized API parity (M4 #39)
+        env:
+          PROFILE_PARITY_INTEGRATION: "1"
+          SYNTHETIC_JWT_SECRET: profile-parity-test-secret
+        run: npm run test:profile-parity
+
       - name: Atomic inventory claim integration (TC-004)
         run: npm run test:claim-inventory
 
