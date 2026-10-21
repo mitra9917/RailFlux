@@ -19,6 +19,9 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-observability-smoke.sh` | Dashboard + alarms smoke (M5 #50) |
 | `aws-account-budgets-smoke.sh` | Account budget notifications (M5 #51) |
 | `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
+| `aws-teardown-session.sh` | Runbook teardown order + orphan audit (`--dry-run` default, M5 #53) |
+| `aws-orphan-audit.sh` | Scan `ap-south-1` + `us-east-1`; fail if paid RailFlux orphans remain |
+| `aws-orphan-audit.mjs` | Orphan audit logic (also imported by tests) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 
 Default application region: **`ap-south-1`**. CloudFront WAF edge stack: **`us-east-1`**.

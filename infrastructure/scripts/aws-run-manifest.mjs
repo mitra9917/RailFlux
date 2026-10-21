@@ -133,12 +133,54 @@ export function validateRunManifestPreflight(manifestPath, options = {}) {
   return { ok: errors.length === 0, errors, warnings, config };
 }
 
+/**
+ * Append teardown audit fields to a run manifest (M5 #53).
+ * @param {string} manifestPath
+ * @param {{ auditor?: string, completedAt?: string }} options
+ */
+export function appendTeardownRecord(manifestPath, options = {}) {
+  const abs = path.resolve(manifestPath);
+  if (!fs.existsSync(abs)) {
+    throw new Error(`Manifest not found: ${abs}`);
+  }
+  const text = fs.readFileSync(abs, 'utf8');
+  if (/^teardown:/m.test(text)) {
+    throw new Error('Manifest already contains a teardown: block');
+  }
+  const completedAt = options.completedAt || new Date().toISOString();
+  const auditor = options.auditor || 'railflux';
+  const block = `\nteardown:\n  completed_at: ${completedAt}\n  auditor: ${auditor}\n`;
+  fs.appendFileSync(abs, block, 'utf8');
+  return { manifestPath: abs, completedAt, auditor };
+}
+
 function main() {
   const manifestPath = process.argv[2];
   const mode = process.argv[3] || 'check';
   if (!manifestPath) {
-    console.error('Usage: aws-run-manifest.mjs <manifest.yaml> [check|shell|json]');
+    console.error(
+      'Usage: aws-run-manifest.mjs <manifest.yaml> [check|shell|json|record-teardown] [--auditor NAME]',
+    );
     process.exit(1);
+  }
+  if (mode === 'record-teardown') {
+    let auditor = 'railflux';
+    for (let i = 4; i < process.argv.length; i += 1) {
+      if (process.argv[i] === '--auditor') {
+        auditor = process.argv[i + 1] || auditor;
+        i += 1;
+      }
+    }
+    try {
+      const record = appendTeardownRecord(manifestPath, { auditor });
+      console.log(
+        `Recorded teardown on ${record.manifestPath}: completed_at=${record.completedAt} auditor=${record.auditor}`,
+      );
+      process.exit(0);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
   }
   const requireExecuteEnv = process.env.RAILFLUX_REQUIRE_EXECUTE_ENV === '1';
   const result = validateRunManifestPreflight(manifestPath, { requireExecuteEnv });

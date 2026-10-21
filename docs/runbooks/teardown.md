@@ -1,5 +1,22 @@
 # Teardown and Cost-Audit Runbook
 
+## Automated session teardown (M5 #53)
+
+From the repository root (CLI profile `railflux`):
+
+```bash
+# Plan only — no AWS deletes
+npm run aws:teardown:session -- --manifest experiment/my-run.yaml
+
+# Delete stacks in runbook order, then fail if paid orphans remain
+npm run aws:teardown:session -- --manifest experiment/my-run.yaml --execute --record-teardown
+
+# Audit only (both regions)
+npm run aws:audit:orphans -- --session SESSION
+```
+
+`railflux-account-budgets` in **us-east-1** is intentionally allowlisted and not deleted with a session.
+
 ## Normal teardown
 
 1. Stop load generation and wait for bounded artifact export.
