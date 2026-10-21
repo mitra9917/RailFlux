@@ -9,7 +9,7 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `cfn-validate.sh` | Structural checks + optional `aws cloudformation validate-template` |
 | `cfn-lib.sh` | Shared regions, stack names, tags (sourced by other scripts) |
 | `aws-deploy.sh` | Deploy `aws-baseline`, `aws-optimized`, or `aws-edge-waf` root stack |
-| `aws-deploy-module.sh` | Deploy `network`, `iam`, or `rds` shared module for a session |
+| `aws-deploy-module.sh` | Deploy `network`, `iam`, `rds`, or `rds-replica` (optimized) module |
 | `aws-rds-migrate-smoke.sh` | Baseline smoke — connect to RDS and run `migrate.sh` (M5 #43) |
 | `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |

@@ -1,18 +1,65 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: RailFlux optimized RDS read replica (M5 P2 layout stub).
+Description: >-
+  RailFlux MySQL read replica for aws-optimized (M5 #44). Non-authoritative
+  reads only — booking and inventory claims remain on the primary (see db-routing.md).
 
 Parameters:
   SessionName:
     Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  SourceDbInstanceIdentifier:
+    Type: String
+    Description: Primary DBInstanceIdentifier from shared/rds-primary stack.
+  RdsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: RDS security group from the network stack (same as primary).
+  ReplicaDbInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+    AllowedValues:
+      - db.t4g.micro
+      - db.t3.micro
 
 Metadata:
   RailFlux:
     Module: rds-replica
     Profile: aws-optimized
-    LayoutVersion: m5-issue-41
+    LayoutVersion: m5-issue-44
+    AuthoritativeWrites: primary-only
+    ReadServiceTarget: replica-endpoint
+    BookingServiceTarget: primary-endpoint
 
-Resources: {}
+Resources:
+  DbReadReplica:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DBInstanceIdentifier: !Sub railflux-${SessionName}-replica
+      SourceDBInstanceIdentifier: !Ref SourceDbInstanceIdentifier
+      DBInstanceClass: !Ref ReplicaDbInstanceClass
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref RdsSecurityGroupId
+      AutoMinorVersionUpgrade: true
+      Tags:
+        - Key: Name
+          Value: !Sub railflux-${SessionName}-replica
+        - Key: RailFluxDbRole
+          Value: read-replica
 
 Outputs:
-  Module:
-    Value: rds-replica
+  DbReplicaInstanceIdentifier:
+    Value: !Ref DbReadReplica
+  DbReplicaEndpointAddress:
+    Value: !GetAtt DbReadReplica.Endpoint.Address
+  DbReplicaEndpointPort:
+    Value: !GetAtt DbReadReplica.Endpoint.Port
+  SourceDbInstanceIdentifier:
+    Value: !Ref SourceDbInstanceIdentifier
+  DbPrimaryEndpointHint:
+    Description: >-
+      Booking service must use DbEndpointAddress from railflux-rds-* stack, not this replica.
+    Value: use-rds-primary-stack-output

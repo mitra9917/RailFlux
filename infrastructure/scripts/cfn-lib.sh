@@ -27,6 +27,7 @@ railflux_module_stack_name() {
     network) echo "railflux-network-${session}" ;;
     iam) echo "railflux-iam-${session}" ;;
     rds) echo "railflux-rds-${session}" ;;
+    rds-replica) echo "railflux-rds-replica-${session}" ;;
     *)
       echo "Unknown module: ${module}" >&2
       return 1
@@ -113,6 +114,16 @@ railflux_require_network_stack() {
   stack="$(railflux_module_stack_name network "${session}")"
   if ! aws cloudformation describe-stacks --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}" >/dev/null 2>&1; then
     echo "Network stack ${stack} not found. Run aws:deploy:network first." >&2
+    exit 1
+  fi
+}
+
+railflux_require_rds_primary_stack() {
+  local session="$1"
+  local stack
+  stack="$(railflux_module_stack_name rds "${session}")"
+  if ! aws cloudformation describe-stacks --stack-name "${stack}" --region "${RAILFLUX_APP_REGION}" >/dev/null 2>&1; then
+    echo "RDS primary stack ${stack} not found. Run aws:deploy:rds first." >&2
     exit 1
   fi
 }

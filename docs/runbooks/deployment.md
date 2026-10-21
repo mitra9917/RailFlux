@@ -24,7 +24,7 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 3. Deploy network, RDS primary, and IAM (`npm run aws:deploy:network`, then `aws:deploy:rds`, then `aws:deploy:iam`). Verify schema with `npm run aws:smoke:rds-migrate -- --session SESSION`.
 4. For optimized sessions only, deploy queue/DLQ; omit them from the Stage 1 baseline smoke profile.
 5. Deploy RDS, migrate schema, restore fixture, and record checksum.
-6. For optimized sessions only, deploy read replica and ElastiCache.
+6. For optimized sessions only, deploy read replica (`npm run aws:deploy:rds-replica`) and ElastiCache. Wire **read** tasks to replica endpoint and **booking** to primary ([db-routing.md](../../infrastructure/cloudformation/optimized/db-routing.md)).
 7. Deploy ECS task definitions/services and ALB routing.
 8. Deploy private S3/CloudFront frontend.
 9. Enable WAF only for sessions that require it.

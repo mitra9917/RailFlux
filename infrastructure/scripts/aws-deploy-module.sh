@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -105,9 +105,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds) ;;
+  network | iam | rds | rds-replica) ;;
   *)
-    echo "Module must be network, iam, or rds." >&2
+    echo "Module must be network, iam, rds, or rds-replica." >&2
     exit 1
     ;;
 esac
@@ -183,6 +183,25 @@ case "${MODULE}" in
     if [[ -n "${DB_SECRET_ARN}" ]]; then
       echo "Note: --db-secret-arn is ignored for rds module (RDS manages master secret)." >&2
     fi
+    ;;
+  rds-replica)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/optimized/rds-replica.yaml"
+    TAG_PROFILE="aws-optimized"
+    railflux_require_network_stack "${SESSION}"
+    railflux_require_rds_primary_stack "${SESSION}"
+    NETWORK_STACK="$(railflux_module_stack_name network "${SESSION}")"
+    RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
+    RDS_SG="$(railflux_cfn_output "${NETWORK_STACK}" RdsSecurityGroupId)"
+    SOURCE_ID="$(railflux_cfn_output "${RDS_STACK}" DbInstanceIdentifier)"
+    if [[ -z "${RDS_SG}" || "${RDS_SG}" == None || -z "${SOURCE_ID}" || "${SOURCE_ID}" == None ]]; then
+      echo "Missing network RDS SG or primary DbInstanceIdentifier for replica deploy." >&2
+      exit 1
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "SourceDbInstanceIdentifier=${SOURCE_ID}"
+      "RdsSecurityGroupId=${RDS_SG}"
+    )
     ;;
 esac
 
