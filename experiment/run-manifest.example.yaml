@@ -1,0 +1,54 @@
+# Example for aws:deploy:preflight / aws:deploy:session (copy and customize).
+schema_version: "1.0"
+run_id: run-example-001
+pair_id: pair-001
+pair_order: AB
+architecture: baseline
+deployment:
+  session_name: lab-example
+  owner: railflux-operator
+  application_region: ap-south-1
+versions:
+  application_git_sha: TO_SET
+  infrastructure_git_sha: TO_SET
+  image_digest: TO_SET
+fixture:
+  id: railflux-tatkal-v1
+  sha256: TO_SET
+  request_seed: 772910
+experiment:
+  inventory_profile: contention
+  cache_condition: none
+  load_level: L80
+  waf_mode: "off"
+  autoscaling:
+    enabled: false
+    policy_id: none
+  cohort_mix:
+    legitimate: 0.8
+    bot_like: 0.2
+  duration_seconds: 180
+resources:
+  request_serving_vcpu_max_total: "0.5"
+  request_serving_memory_gib_max_total: "1"
+  services:
+    baseline: {max_tasks: 1, vcpu_per_task: 0.5, memory_gib_per_task: 1}
+    read: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+    booking: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+    worker: {max_tasks: 0, vcpu_per_task: 0, memory_gib_per_task: 0}
+  database_class: db.t4g.micro
+  cache_class: none
+cost:
+  estimated_hourly_usd: "1.20"
+  maximum_session_hours: "2"
+  expires_at: 2026-12-31T23:59:59Z
+failure_injection:
+  enabled: false
+  type: none
+validity_gates:
+  fixture_checksum_passed: false
+  health_passed: false
+  queue_empty_passed: false
+  generator_preflight_passed: false
+artifacts:
+  prefix: TO_SET

@@ -3,9 +3,13 @@
 CloudFormation **layout stubs** and wrapper scripts ship in M5 #41 (`infrastructure/cloudformation/`, `infrastructure/scripts/aws-deploy.sh`). Full modules (VPC, RDS, ECS) land in follow-on M5 issues—do not deploy paid resources beyond empty root stacks until those modules exist unless you accept placeholder-only stacks.
 
 ```bash
-npm run cfn:validate
-npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:59Z --owner YOU --run-id RUN_ID
+# Copy and fill experiment/run-manifest.template.yaml (deployment.session_name, cost.expires_at, …)
+npm run aws:deploy:preflight -- --manifest experiment/my-run.yaml
+npm run aws:deploy:session -- --manifest experiment/my-run.yaml          # dry-run plan
+npm run aws:deploy:session -- --manifest experiment/my-run.yaml --execute  # apply (needs env; see script help)
 ```
+
+Single-module deploys remain available via `npm run aws:deploy:network` and other `aws:deploy:*` scripts.
 
 ## Preflight
 

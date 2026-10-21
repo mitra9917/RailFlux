@@ -9,6 +9,9 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `cfn-validate.sh` | Structural checks + optional `aws cloudformation validate-template` |
 | `cfn-lib.sh` | Shared regions, stack names, tags (sourced by other scripts) |
 | `aws-deploy.sh` | Deploy `aws-baseline`, `aws-optimized`, or `aws-edge-waf` root stack |
+| `aws-run-manifest.mjs` | Parse run manifest for deploy preflight (M5 #52) |
+| `aws-deploy-preflight.sh` | Manifest + `cfn:validate` + AWS identity + budget stack check |
+| `aws-deploy-session.sh` | Full module order from deployment runbook (`--dry-run` default) |
 | `aws-deploy-module.sh` | Deploy `network`, `iam`, `rds`, `rds-replica`, `elasticache`, `alb-*`, `ecs-*`, or `cloudfront-*` module |
 | `aws-rds-migrate-smoke.sh` | Baseline smoke — connect to RDS and run `migrate.sh` (M5 #43) |
 | `aws-ecs-alb-smoke.sh` | Wait for ALB target group healthy (M5 #46) |
