@@ -22,7 +22,7 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `shared/alb-ingress.yaml` | ALB HTTPS + origin header + WAF hooks (**M5 #47**) |
 | `optimized/rds-replica.yaml` | Read replica (**M5 #44**, optimized only) |
 | `optimized/elasticache.yaml` | Redis test window (**M5 #45**) |
-| `optimized/sqs-worker.yaml` | SQS, DLQ, worker service (M5 P3) |
+| `optimized/sqs-worker.yaml` | Side-effects SQS + DLQ (**M5 #49**) |
 | `optimized/ecs-services.yaml` | Read, booking, edge Fargate (**M5 #46**, edge TG from #47) |
 | `shared/cloudfront-oac.yaml` | Private S3 + CloudFront OAC + `/api/*` → ALB (**M5 #48**) |
 | `edge/waf.yaml` | **CloudFront-scoped WAF** (see below) |
@@ -68,6 +68,8 @@ From repository root:
 | `npm run aws:smoke:rds-migrate` | Run migrations against session RDS |
 | `npm run aws:deploy:rds-replica` | Read replica (after primary; optimized) |
 | `npm run aws:deploy:elasticache` | ElastiCache Redis (optimized test window) |
+| `npm run aws:deploy:sqs-worker` | SQS + DLQ (optimized; before IAM SQS policies) |
+| `npm run aws:smoke:sqs-worker` | Queue + worker service presence check |
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).
