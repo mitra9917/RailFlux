@@ -28,7 +28,7 @@ npm run aws:deploy:baseline -- --session SESSION --expires-at 2026-12-31T23:59:5
 7. Deploy ALB ingress (`npm run aws:deploy:alb-baseline` or `aws:deploy:alb-optimized`) with ACM cert and origin verify header. When the manifest sets `waf_mode: on`, deploy edge WAF first (`npm run aws:deploy:edge-waf`), then pass `--waf-mode on` to the ALB module.
 8. Deploy ECS task definitions/services wired to the ALB target group (`aws:deploy:ecs-baseline` / `aws:deploy:ecs-optimized`). Optimized deploy requires `--container-image-worker` when the sqs-worker stack exists. Smoke with `npm run aws:smoke:ecs-alb` and `npm run aws:smoke:sqs-worker`.
 9. Deploy private S3/CloudFront frontend (`npm run aws:deploy:cloudfront-baseline` or `cloudfront-optimized`) with the same `--origin-header-value` as ALB; pass `--waf-mode on` when the edge WAF stack exists.
-10. Deploy minimal dashboard/alarms and log retention.
+10. Deploy observability (`npm run aws:deploy:observability -- --session SESSION --run-id RUN_ID --deployment-profile …`). Re-deploy ECS if it was created before `RunId` was set, so OTEL env is present. Smoke with `npm run aws:smoke:observability`.
 
 ## Validate
 

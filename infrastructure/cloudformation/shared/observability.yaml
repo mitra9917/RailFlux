@@ -1,0 +1,276 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  RailFlux session CloudWatch dashboard, SLO metric filters, and alarms (M5 #50).
+  Custom metrics export under namespace RailFlux/<RunId>.
+
+Parameters:
+  SessionName:
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  RunId:
+    Type: String
+    MinLength: 1
+    MaxLength: 64
+  DeploymentProfile:
+    Type: String
+    AllowedValues:
+      - aws-baseline
+      - aws-optimized
+  AlbLoadBalancerFullName:
+    Type: String
+    Default: ""
+  EcsClusterName:
+    Type: String
+  DbInstanceIdentifier:
+    Type: String
+  SideEffectsQueueName:
+    Type: String
+    Default: ""
+  SideEffectsDlqName:
+    Type: String
+    Default: ""
+  BookingP99LatencyThresholdMs:
+    Type: Number
+    Default: 2000
+  RdsConnectionsAlarmThreshold:
+    Type: Number
+    Default: 80
+
+Conditions:
+  IsBaseline: !Equals [!Ref DeploymentProfile, aws-baseline]
+  IsOptimized: !Equals [!Ref DeploymentProfile, aws-optimized]
+  HasAlb: !Not [!Equals [!Ref AlbLoadBalancerFullName, ""]]
+  HasSqs: !And
+    - !Condition IsOptimized
+    - !Not [!Equals [!Ref SideEffectsQueueName, ""]]
+  HasDlq: !And
+    - !Condition HasSqs
+    - !Not [!Equals [!Ref SideEffectsDlqName, ""]]
+
+Metadata:
+  RailFlux:
+    Module: observability
+    LayoutVersion: m5-issue-50
+    OpenTelemetryHooks:
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=railflux,run_id,deployment.profile"
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: "0.1"
+
+Resources:
+  MonolithHttp5xxFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: IsBaseline
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/monolith
+      FilterPattern: '{ $.event = "http_request" && ($.status = 5* || $.status = 6*) }'
+      MetricTransformations:
+        - MetricName: Http5xx
+          MetricNamespace: !Sub RailFlux/${RunId}
+          MetricValue: "1"
+          DefaultValue: 0
+
+  MonolithBookingLatencyFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: IsBaseline
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/monolith
+      FilterPattern: '{ $.event = "http_request" && $.operation = "booking" }'
+      MetricTransformations:
+        - MetricName: BookingRequestDurationMs
+          MetricNamespace: !Sub RailFlux/${RunId}
+          MetricValue: "$.duration_ms"
+          DefaultValue: 0
+          Unit: Milliseconds
+
+  EdgeHttp5xxFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: IsOptimized
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/edge
+      FilterPattern: '{ $.event = "http_request" && ($.status = 5* || $.status = 6*) }'
+      MetricTransformations:
+        - MetricName: Http5xx
+          MetricNamespace: !Sub RailFlux/${RunId}
+          MetricValue: "1"
+          DefaultValue: 0
+
+  BookingHttp5xxFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: IsOptimized
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/booking
+      FilterPattern: '{ $.event = "http_request" && ($.status = 5* || $.status = 6*) }'
+      MetricTransformations:
+        - MetricName: BookingHttp5xx
+          MetricNamespace: !Sub RailFlux/${RunId}
+          MetricValue: "1"
+          DefaultValue: 0
+
+  BookingLatencyFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: IsOptimized
+    Properties:
+      LogGroupName: !Sub /railflux/${SessionName}/booking
+      FilterPattern: '{ $.event = "http_request" && $.operation = "booking" }'
+      MetricTransformations:
+        - MetricName: BookingRequestDurationMs
+          MetricNamespace: !Sub RailFlux/${RunId}
+          MetricValue: "$.duration_ms"
+          DefaultValue: 0
+          Unit: Milliseconds
+
+  SessionDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub RailFlux-${RunId}
+      DashboardBody: !Sub
+        - |
+          {
+            "widgets": [
+              {
+                "type": "text",
+                "x": 0, "y": 0, "width": 24, "height": 2,
+                "properties": {
+                  "markdown": "# RailFlux **${RunId}** (${DeploymentProfile})\nLogs: `/railflux/${SessionName}/*` · SLO metrics: `RailFlux/${RunId}`"
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0, "y": 2, "width": 12, "height": 6,
+                "properties": {
+                  "title": "HTTP 5xx (log-derived)",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "RailFlux/${RunId}", "Http5xx", { "stat": "Sum", "period": 60 } ],
+                    [ ".", "BookingHttp5xx", { "stat": "Sum", "period": 60 } ]
+                  ],
+                  "view": "timeSeries"
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12, "y": 2, "width": 12, "height": 6,
+                "properties": {
+                  "title": "Booking duration p95/p99 (ms)",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "RailFlux/${RunId}", "BookingRequestDurationMs", { "stat": "p99", "period": 60 } ],
+                    [ "...", { "stat": "p95", "period": 60 } ]
+                  ],
+                  "view": "timeSeries"
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0, "y": 8, "width": 12, "height": 6,
+                "properties": {
+                  "title": "ECS CPU",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ClusterName", "${EcsClusterName}", { "stat": "Average", "period": 60 } ]
+                  ],
+                  "view": "timeSeries"
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12, "y": 8, "width": 12, "height": 6,
+                "properties": {
+                  "title": "RDS connections",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${DbInstanceIdentifier}", { "stat": "Average", "period": 60 } ]
+                  ],
+                  "view": "timeSeries"
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0, "y": 14, "width": 24, "height": 6,
+                "properties": {
+                  "title": "ALB target response time p99",
+                  "region": "${AWS::Region}",
+                  "metrics": [
+                    [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${AlbFullName}", { "stat": "p99", "period": 60 } ]
+                  ],
+                  "view": "timeSeries"
+                }
+              }
+            ]
+          }
+        - AlbFullName: !If [HasAlb, !Ref AlbLoadBalancerFullName, "none"]
+
+  BookingP99LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub railflux-${SessionName}-booking-p99-latency
+      AlarmDescription: Booking p99 latency over SLO threshold (observability.md).
+      Namespace: !Sub RailFlux/${RunId}
+      MetricName: BookingRequestDurationMs
+      ExtendedStatistic: p99
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: !Ref BookingP99LatencyThresholdMs
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  RdsConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub railflux-${SessionName}-rds-connections
+      Namespace: AWS/RDS
+      MetricName: DatabaseConnections
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref DbInstanceIdentifier
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: !Ref RdsConnectionsAlarmThreshold
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  SideEffectsQueueAgeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasSqs
+    Properties:
+      AlarmName: !Sub railflux-${SessionName}-sqs-oldest-age
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !Ref SideEffectsQueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 120
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  SideEffectsDlqDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasDlq
+    Properties:
+      AlarmName: !Sub railflux-${SessionName}-sqs-dlq-depth
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !Ref SideEffectsDlqName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  MetricsNamespace:
+    Value: !Sub RailFlux/${RunId}
+  DashboardName:
+    Value: !Sub RailFlux-${RunId}
+  OtelResourceAttributes:
+    Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=${DeploymentProfile}

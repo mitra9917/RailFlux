@@ -137,6 +137,9 @@ Outputs:
     Value: !Ref ApplicationLoadBalancer
   AlbDnsName:
     Value: !GetAtt ApplicationLoadBalancer.DNSName
+  AlbLoadBalancerFullName:
+    Description: CloudWatch ApplicationELB dimension (LoadBalancer).
+    Value: !GetAtt ApplicationLoadBalancer.LoadBalancerFullName
   TargetGroupArn:
     Value: !Ref ApplicationTargetGroup
   HttpsListenerArn:

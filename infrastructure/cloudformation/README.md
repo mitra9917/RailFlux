@@ -25,6 +25,7 @@ Only one paid profile should be deployed at a time. Session tags (`RunId`, `Owne
 | `optimized/sqs-worker.yaml` | Side-effects SQS + DLQ (**M5 #49**) |
 | `optimized/ecs-services.yaml` | Read, booking, edge Fargate (**M5 #46**, edge TG from #47) |
 | `shared/cloudfront-oac.yaml` | Private S3 + CloudFront OAC + `/api/*` → ALB (**M5 #48**) |
+| `shared/observability.yaml` | Dashboard, SLO metric filters, alarms, OTEL hooks (**M5 #50**) |
 | `edge/waf.yaml` | **CloudFront-scoped WAF** (see below) |
 
 Module templates ship as **layout stubs** in M5 #41; nested resources land in follow-on issues. Root stacks record the planned module order in `Metadata.RailFlux.PlannedNestedStacks`.
@@ -62,6 +63,8 @@ From repository root:
 | `npm run aws:smoke:ecs-alb` | Wait for ALB target group healthy |
 | `npm run aws:deploy:cloudfront-baseline` | S3 + CloudFront (requires alb-baseline) |
 | `npm run aws:deploy:cloudfront-optimized` | S3 + CloudFront (requires alb-optimized) |
+| `npm run aws:deploy:observability` | CloudWatch dashboard + SLO alarms (after ECS) |
+| `npm run aws:smoke:observability` | Verify dashboard and session alarms |
 | `npm run aws:deploy:network` | VPC + security groups for a session |
 | `npm run aws:deploy:iam` | Task roles (pass `--deployment-profile`) |
 | `npm run aws:deploy:rds` | RDS primary (requires network stack) |

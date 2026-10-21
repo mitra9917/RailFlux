@@ -13,6 +13,7 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-rds-migrate-smoke.sh` | Baseline smoke — connect to RDS and run `migrate.sh` (M5 #43) |
 | `aws-ecs-alb-smoke.sh` | Wait for ALB target group healthy (M5 #46) |
 | `aws-sqs-worker-smoke.sh` | SQS/DLQ + worker ECS smoke (M5 #49) |
+| `aws-observability-smoke.sh` | Dashboard + alarms smoke (M5 #50) |
 | `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 

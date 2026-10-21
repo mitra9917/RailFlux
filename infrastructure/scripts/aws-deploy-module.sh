@@ -9,7 +9,7 @@ source "$(dirname "$0")/cfn-lib.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|sqs-worker|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized|cloudfront-baseline|cloudfront-optimized> --session NAME [options]
+  aws-deploy-module.sh <network|iam|rds|rds-replica|elasticache|sqs-worker|alb-baseline|alb-optimized|ecs-baseline|ecs-optimized|cloudfront-baseline|cloudfront-optimized|observability> --session NAME [options]
 
 Options:
   --session NAME          Required session id (stack suffix).
@@ -162,9 +162,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "${MODULE}" in
-  network | iam | rds | rds-replica | elasticache | sqs-worker | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized) ;;
+  network | iam | rds | rds-replica | elasticache | sqs-worker | alb-baseline | alb-optimized | ecs-baseline | ecs-optimized | cloudfront-baseline | cloudfront-optimized | observability) ;;
   *)
-    echo "Module must be network, iam, rds, rds-replica, elasticache, sqs-worker, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, or cloudfront-optimized." >&2
+    echo "Module must be network, iam, rds, rds-replica, elasticache, sqs-worker, alb-baseline, alb-optimized, ecs-baseline, ecs-optimized, cloudfront-baseline, cloudfront-optimized, or observability." >&2
     exit 1
     ;;
 esac
@@ -180,6 +180,11 @@ fi
 
 if [[ "${MODULE}" == iam && -z "${DEPLOYMENT_PROFILE}" ]]; then
   echo "--deployment-profile is required for iam module." >&2
+  exit 1
+fi
+
+if [[ "${MODULE}" == observability && -z "${DEPLOYMENT_PROFILE}" ]]; then
+  echo "--deployment-profile is required for observability module." >&2
   exit 1
 fi
 
@@ -366,10 +371,11 @@ case "${MODULE}" in
       "DbName=$(railflux_cfn_output "${RDS_STACK}" DbName)"
       "DbMasterSecretArn=$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
       "SyntheticJwtSecret=${SYNTHETIC_JWT_SECRET}"
+      "RunId=${RUN_ID}"
       "AppPort=${APP_PORT}"
     )
     ;;
-  ecs-optimized)
+  ecs-optimized:
     TEMPLATE="${RAILFLUX_CFN_DIR}/optimized/ecs-services.yaml"
     TAG_PROFILE="aws-optimized"
     if [[ -z "${CONTAINER_IMAGE_EDGE}" || -z "${CONTAINER_IMAGE_READ}" || -z "${CONTAINER_IMAGE_BOOKING}" || -z "${SYNTHETIC_JWT_SECRET}" ]]; then
@@ -430,6 +436,50 @@ case "${MODULE}" in
       "DbMasterSecretArn=$(railflux_cfn_output "${RDS_STACK}" DbMasterSecretArn)"
       "RedisUrl=${REDIS_URL}"
       "SyntheticJwtSecret=${SYNTHETIC_JWT_SECRET}"
+      "RunId=${RUN_ID}"
+    )
+    ;;
+  observability)
+    TEMPLATE="${RAILFLUX_CFN_DIR}/shared/observability.yaml"
+    TAG_PROFILE="${DEPLOYMENT_PROFILE}"
+    railflux_require_rds_primary_stack "${SESSION}"
+    RDS_STACK="$(railflux_module_stack_name rds "${SESSION}")"
+    DB_ID="$(railflux_cfn_output "${RDS_STACK}" DbInstanceIdentifier)"
+    ALB_MODULE="alb-baseline"
+    ECS_MODULE="ecs-baseline"
+    if [[ "${DEPLOYMENT_PROFILE}" == aws-optimized ]]; then
+      ALB_MODULE="alb-optimized"
+      ECS_MODULE="ecs-optimized"
+    fi
+    ALB_STACK="$(railflux_module_stack_name "${ALB_MODULE}" "${SESSION}")"
+    ECS_STACK="$(railflux_module_stack_name "${ECS_MODULE}" "${SESSION}")"
+    if ! aws cloudformation describe-stacks --stack-name "${ECS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      echo "ECS stack ${ECS_STACK} not found. Deploy ${ECS_MODULE} before observability." >&2
+      exit 1
+    fi
+    ALB_FULL=""
+    if aws cloudformation describe-stacks --stack-name "${ALB_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+      ALB_FULL="$(railflux_cfn_output "${ALB_STACK}" AlbLoadBalancerFullName)"
+    fi
+    ECS_CLUSTER="$(railflux_cfn_output "${ECS_STACK}" EcsClusterName)"
+    SQS_QUEUE_NAME=""
+    SQS_DLQ_NAME=""
+    if [[ "${DEPLOYMENT_PROFILE}" == aws-optimized ]]; then
+      SQS_STACK="$(railflux_module_stack_name sqs-worker "${SESSION}")"
+      if aws cloudformation describe-stacks --stack-name "${SQS_STACK}" --region "${REGION}" >/dev/null 2>&1; then
+        SQS_QUEUE_NAME="railflux-${SESSION}-side-effects"
+        SQS_DLQ_NAME="railflux-${SESSION}-side-effects-dlq"
+      fi
+    fi
+    PARAM_OVERRIDES=(
+      "SessionName=${SESSION}"
+      "RunId=${RUN_ID}"
+      "DeploymentProfile=${DEPLOYMENT_PROFILE}"
+      "AlbLoadBalancerFullName=${ALB_FULL}"
+      "EcsClusterName=${ECS_CLUSTER}"
+      "DbInstanceIdentifier=${DB_ID}"
+      "SideEffectsQueueName=${SQS_QUEUE_NAME}"
+      "SideEffectsDlqName=${SQS_DLQ_NAME}"
     )
     ;;
   cloudfront-baseline | cloudfront-optimized)
