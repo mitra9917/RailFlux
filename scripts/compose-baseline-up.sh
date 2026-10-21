@@ -48,8 +48,13 @@ until curl -sf "http://127.0.0.1:${BASELINE_PORT}/health/ready" >/dev/null; do
   sleep 2
 done
 
-BASELINE_HEALTH_URL="http://127.0.0.1:${BASELINE_PORT}" "${ROOT}/scripts/check-baseline-health.sh"
+HEALTH_OK_MESSAGE="Baseline monolith health ok" \
+  BASELINE_HEALTH_URL="http://127.0.0.1:${BASELINE_PORT}" \
+  "${ROOT}/scripts/check-baseline-health.sh"
 echo ""
+"${ROOT}/scripts/compose-status.sh" | tail -n +5 | head -n 20
+echo ""
+echo "Profile: BASELINE (legacy-style single app — not IRCTC, our experiment monolith)."
 echo "Read path ready. Example (mint JWT from repo root):"
 echo "  export SYNTHETIC_JWT_SECRET=\${SYNTHETIC_JWT_SECRET:-dev-only-change-me}"
 echo "  TOKEN=\$(node scripts/mint-synthetic-jwt.mjs 11111111-1111-4111-8111-111111111111)"

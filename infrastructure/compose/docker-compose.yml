@@ -1,5 +1,6 @@
-# Local MySQL for baseline dev (matches CI service env in .github/workflows/ci.yml).
-# Full read path: copy .env.example → .env (sets COMPOSE_PROFILES=baseline), then `docker compose up`.
+# Local profiles (copy .env.example or .env.optimized.example → .env):
+#   baseline  — MySQL + db-init + monolith API (`npm run compose:baseline`)
+#   optimized — MySQL + Redis + ElasticMQ + read/booking/worker + edge (`npm run compose:optimized`)
 services:
   mysql:
     image: mysql:8.0
@@ -21,8 +22,41 @@ services:
     volumes:
       - railflux-mysql-data:/var/lib/mysql
 
+  redis:
+    profiles: [optimized]
+    image: redis:7-alpine
+    container_name: railflux-redis
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 8
+
+  elasticmq:
+    profiles: [optimized]
+    image: softwaremill/elasticmq-native:latest
+    container_name: railflux-elasticmq
+    ports:
+      - "${ELASTICMQ_HOST_PORT:-9324}:9324"
+
+  sqs-init:
+    profiles: [optimized]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.sqs-init
+    container_name: railflux-sqs-init
+    environment:
+      SQS_ENDPOINT: http://elasticmq:9324
+      AWS_REGION: elasticmq-local
+    depends_on:
+      elasticmq:
+        condition: service_started
+    restart: "no"
+
   db-init:
-    profiles: [baseline]
+    profiles: [baseline, optimized]
     build:
       context: ../..
       dockerfile: infrastructure/compose/Dockerfile.db-init
@@ -72,6 +106,159 @@ services:
       timeout: 5s
       retries: 6
       start_period: 25s
+
+  read:
+    profiles: [optimized]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.optimized-service
+      args:
+        BUILD_SCRIPT: npm run build:shared && npm run build:baseline && npm run build -w @railflux/read
+        SERVICE_PATH: services/read
+        LISTEN_PORT: "3001"
+    container_name: railflux-read
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      SERVICE_PROFILE: optimized
+      SYNTHETIC_JWT_SECRET: ${SYNTHETIC_JWT_SECRET:-dev-only-change-me}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_DATABASE: railflux
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  booking:
+    profiles: [optimized]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.optimized-service
+      args:
+        BUILD_SCRIPT: npm run build:shared && npm run build:baseline && npm run build -w @railflux/booking
+        SERVICE_PATH: services/booking
+        LISTEN_PORT: "3002"
+    container_name: railflux-booking
+    environment:
+      NODE_ENV: development
+      PORT: "3002"
+      SERVICE_PROFILE: optimized
+      SYNTHETIC_JWT_SECRET: ${SYNTHETIC_JWT_SECRET:-dev-only-change-me}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_DATABASE: railflux
+      OUTBOX_DELIVERY: sqs
+      SQS_ENDPOINT: http://elasticmq:9324
+      SQS_SIDE_EFFECTS_QUEUE_URL: http://elasticmq:9324/000000000000/railflux-side-effects
+      AWS_REGION: elasticmq-local
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      sqs-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3002/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+
+  worker:
+    profiles: [optimized]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.optimized-service
+      args:
+        BUILD_SCRIPT: npm run build:shared && npm run build:baseline && npm run build -w @railflux/worker
+        SERVICE_PATH: services/worker
+        LISTEN_PORT: "3003"
+    container_name: railflux-worker
+    environment:
+      NODE_ENV: development
+      PORT: "3003"
+      SYNTHETIC_JWT_SECRET: ${SYNTHETIC_JWT_SECRET:-dev-only-change-me}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: railflux
+      MYSQL_PASSWORD: railflux
+      MYSQL_DATABASE: railflux
+      SQS_ENDPOINT: http://elasticmq:9324
+      SQS_SIDE_EFFECTS_QUEUE_URL: http://elasticmq:9324/000000000000/railflux-side-effects
+      AWS_REGION: elasticmq-local
+      WORKER_SQS_WAIT_SECONDS: "5"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      sqs-init:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+
+  edge:
+    profiles: [optimized]
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.optimized-service
+      args:
+        BUILD_SCRIPT: npm run build:shared && npm run build -w @railflux/edge
+        SERVICE_PATH: services/edge
+        LISTEN_PORT: "3000"
+    container_name: railflux-edge
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      READ_UPSTREAM: http://read:3001
+      BOOKING_UPSTREAM: http://booking:3002
+    ports:
+      - "${EDGE_HOST_PORT:-3000}:3000"
+    depends_on:
+      read:
+        condition: service_healthy
+      booking:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
 volumes:
   railflux-mysql-data:
