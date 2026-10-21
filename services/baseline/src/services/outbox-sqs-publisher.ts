@@ -1,11 +1,14 @@
 import {
   BOOKING_CONFIRMED_EVENT_TYPE,
   type BookingConfirmedOutboxMessage,
+  SIDE_EFFECTS_MAX_RECEIVE_COUNT,
 } from '@railflux/shared';
 import {
   CreateQueueCommand,
+  GetQueueAttributesCommand,
   PurgeQueueCommand,
   ReceiveMessageCommand,
+  SetQueueAttributesCommand,
   SQSClient,
   SendMessageCommand,
 } from '@aws-sdk/client-sqs';
@@ -114,6 +117,21 @@ export async function publishBookingConfirmedOutboxToSqs(
 
 /** Integration/CI queue name (separate from local dev `railflux-side-effects` worker). */
 export const INTEGRATION_SIDE_EFFECTS_QUEUE_NAME = 'railflux-side-effects-integration';
+export const INTEGRATION_SIDE_EFFECTS_DLQ_NAME = `${INTEGRATION_SIDE_EFFECTS_QUEUE_NAME}-dlq`;
+
+async function getQueueArn(sqsClient: SQSClient, queueUrl: string): Promise<string> {
+  const res = await sqsClient.send(
+    new GetQueueAttributesCommand({
+      QueueUrl: queueUrl,
+      AttributeNames: ['QueueArn'],
+    }),
+  );
+  const arn = res.Attributes?.QueueArn;
+  if (!arn) {
+    throw new Error(`QueueArn missing for ${queueUrl}`);
+  }
+  return arn;
+}
 
 /** Remove visible messages so tests are not affected by a running dev worker on the default queue. */
 export async function purgeSideEffectsQueue(
@@ -139,6 +157,42 @@ export async function ensureSideEffectsQueue(
   throw new Error(`CreateQueue did not return QueueUrl for ${queueName}`);
 }
 
+export type EnsureSideEffectsQueueWithRedriveOptions = {
+  queueName: string;
+  dlqName: string;
+  maxReceiveCount?: number;
+  /** Short visibility helps integration tests redrive poison messages quickly. */
+  visibilityTimeoutSeconds?: number;
+};
+
+/** Ensure main queue + DLQ and wire SQS redrive (M4 #37 / FT-004). */
+export async function ensureSideEffectsQueueWithRedrive(
+  sqsClient: SQSClient,
+  options: EnsureSideEffectsQueueWithRedriveOptions,
+): Promise<{ queueUrl: string; dlqUrl: string }> {
+  const maxReceiveCount = options.maxReceiveCount ?? SIDE_EFFECTS_MAX_RECEIVE_COUNT;
+  const visibilityTimeoutSeconds = options.visibilityTimeoutSeconds ?? 30;
+
+  const dlqUrl = await ensureSideEffectsQueue(sqsClient, options.dlqName);
+  const dlqArn = await getQueueArn(sqsClient, dlqUrl);
+
+  const queueUrl = await ensureSideEffectsQueue(sqsClient, options.queueName);
+  await sqsClient.send(
+    new SetQueueAttributesCommand({
+      QueueUrl: queueUrl,
+      Attributes: {
+        RedrivePolicy: JSON.stringify({
+          deadLetterTargetArn: dlqArn,
+          maxReceiveCount: String(maxReceiveCount),
+        }),
+        VisibilityTimeout: String(visibilityTimeoutSeconds),
+      },
+    }),
+  );
+
+  return { queueUrl, dlqUrl };
+}
+
 export async function receiveSideEffectsMessage(
   sqsClient: SQSClient,
   queueUrl: string,
@@ -146,6 +200,22 @@ export async function receiveSideEffectsMessage(
   const res = await sqsClient.send(
     new ReceiveMessageCommand({
       QueueUrl: queueUrl,
+      MaxNumberOfMessages: 1,
+      WaitTimeSeconds: 2,
+    }),
+  );
+  const body = res.Messages?.[0]?.Body;
+  if (!body) return null;
+  return JSON.parse(body) as BookingConfirmedOutboxMessage;
+}
+
+export async function receiveSideEffectsDlqMessage(
+  sqsClient: SQSClient,
+  dlqUrl: string,
+): Promise<BookingConfirmedOutboxMessage | null> {
+  const res = await sqsClient.send(
+    new ReceiveMessageCommand({
+      QueueUrl: dlqUrl,
       MaxNumberOfMessages: 1,
       WaitTimeSeconds: 2,
     }),

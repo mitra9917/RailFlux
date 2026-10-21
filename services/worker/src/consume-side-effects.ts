@@ -11,6 +11,8 @@ export type SideEffectPollResult = {
   duplicates: number;
   invalid: number;
   notFound: number;
+  /** Handler threw; message left on queue for retry / DLQ redrive. */
+  failed: number;
 };
 
 /** Poll once and process up to one message (at-least-once safe via processed_events). */
@@ -26,6 +28,7 @@ export async function pollSideEffectsQueueOnce(
     duplicates: 0,
     invalid: 0,
     notFound: 0,
+    failed: 0,
   };
 
   const res = await sqsClient.send(
@@ -48,7 +51,13 @@ export async function pollSideEffectsQueueOnce(
     return result;
   }
 
-  const outcome = await processBookingConfirmedSideEffectMessage(pool, parsed);
+  let outcome;
+  try {
+    outcome = await processBookingConfirmedSideEffectMessage(pool, parsed);
+  } catch {
+    result.failed = 1;
+    return result;
+  }
   if (!outcome.ok) {
     if (outcome.reason === 'OUTBOX_NOT_FOUND') {
       result.notFound = 1;

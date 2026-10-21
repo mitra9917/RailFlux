@@ -29,6 +29,7 @@
     "test:ft009-stampede": "npm run build:read && node --test tests/availability-cache-coalescing.test.mjs",
     "test:outbox-sqs": "npm run build:shared && npm run build:baseline && npm run build:booking && OUTBOX_SQS_INTEGRATION=1 node --test tests/integration/outbox-sqs-publish.test.mjs",
     "test:tc010": "npm run build:shared && npm run build:baseline && npm run build:worker && TC010_INTEGRATION=1 node --test tests/integration/tc010-side-effect-duplicate.test.mjs",
+    "test:ft004-dlq": "npm run build:shared && npm run build:baseline && npm run build:worker && FT004_INTEGRATION=1 node --test tests/integration/ft004-poison-dlq.test.mjs",
     "test:edge-routing": "npm run build:shared && npm run build:baseline && npm run build:read && npm run build:booking && npm run build:edge && EDGE_ROUTING_INTEGRATION=1 node --test tests/integration/edge-routing-integration.test.mjs",
     "test:claim-inventory": "npm run build:shared && npm run build:baseline && CLAIM_INTEGRATION=1 node --test tests/integration/claim-inventory.test.mjs",
     "test:idempotency-replay": "npm run build:shared && npm run build:baseline && IDEMPOTENCY_INTEGRATION=1 node --test tests/integration/idempotency-replay.test.mjs",
