@@ -33,6 +33,9 @@ Parameters:
   SyntheticJwtSecret:
     Type: String
     NoEcho: true
+  RunId:
+    Type: String
+    Default: ""
   AppPort:
     Type: Number
     Default: 3000
@@ -48,6 +51,9 @@ Parameters:
     Default: 1
     MinValue: 1
     MaxValue: 4
+
+Conditions:
+  HasRunId: !Not [!Equals [!Ref RunId, ""]]
 
 Metadata:
   RailFlux:
@@ -104,6 +110,26 @@ Resources:
               Value: !Ref DbName
             - Name: SYNTHETIC_JWT_SECRET
               Value: !Ref SyntheticJwtSecret
+            - !If
+              - HasRunId
+              - Name: OTEL_RESOURCE_ATTRIBUTES
+                Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=aws-baseline
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_PROPAGATORS
+                Value: tracecontext,baggage
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER
+                Value: parentbased_traceidratio
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER_ARG
+                Value: "0.1"
+              - !Ref AWS::NoValue
           Secrets:
             - Name: MYSQL_USER
               ValueFrom: !Sub "${DbMasterSecretArn}:username::"

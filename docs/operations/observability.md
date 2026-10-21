@@ -108,3 +108,19 @@ CloudWatch standard metrics may be too coarse for short spikes; one-second appli
 - daily estimated spend beyond the session plan.
 
 Alarms notify; they do not prove a run valid. The experiment validator decides validity.
+
+## AWS session checklist (M5 #50)
+
+Deploy after ECS and ALB with `npm run aws:deploy:observability -- --session SESSION --run-id RUN_ID --deployment-profile aws-baseline|aws-optimized --expires-at …`.
+
+| Doc section | AWS implementation |
+| --- | --- |
+| Correlation `run_id` | Structured logs include `run_id` from `X-Run-Id`; ECS tasks get `OTEL_RESOURCE_ATTRIBUTES` with the same id; custom metrics namespace `RailFlux/<RunId>`. |
+| Primary SLO latency | Log metric filter `BookingRequestDurationMs` + alarm on p99 (default 2000 ms). |
+| HTTP / booking errors | Log metric filters on `http_request` 5xx lines → `RailFlux/<RunId>`. |
+| ECS / ALB / RDS resources | CloudWatch dashboard widgets (CPU, connections, ALB target p99). |
+| SQS queue depth / age | Alarms on oldest message age and DLQ depth (optimized, when sqs-worker stack exists). |
+| OpenTelemetry | W3C `tracecontext` propagators and sampler env on ECS; IAM allows X-Ray and `PutMetricData` for future SDK export. |
+| Export | Dashboard + `GetMetricData` on namespace `RailFlux/<RunId>` for experiment artifacts. |
+
+Smoke: `npm run aws:smoke:observability -- --session SESSION --run-id RUN_ID`.

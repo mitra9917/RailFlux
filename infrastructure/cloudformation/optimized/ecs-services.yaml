@@ -57,6 +57,9 @@ Parameters:
   SyntheticJwtSecret:
     Type: String
     NoEcho: true
+  RunId:
+    Type: String
+    Default: ""
   EdgePort:
     Type: Number
     Default: 3000
@@ -104,6 +107,7 @@ Conditions:
   DeployWorker: !And
     - !Condition HasSideEffectsQueue
     - !Not [!Equals [!Ref ContainerImageWorker, ""]]
+  HasRunId: !Not [!Equals [!Ref RunId, ""]]
 
 Metadata:
   RailFlux:
@@ -212,6 +216,26 @@ Resources:
               - Name: REDIS_URL
                 Value: !Ref RedisUrl
               - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_RESOURCE_ATTRIBUTES
+                Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=aws-optimized
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_PROPAGATORS
+                Value: tracecontext,baggage
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER
+                Value: parentbased_traceidratio
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER_ARG
+                Value: "0.1"
+              - !Ref AWS::NoValue
           Secrets:
             - Name: MYSQL_USER
               ValueFrom: !Sub "${DbMasterSecretArn}:username::"
@@ -280,6 +304,26 @@ Resources:
               - Name: AWS_REGION
                 Value: !Ref AWS::Region
               - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_RESOURCE_ATTRIBUTES
+                Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=aws-optimized
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_PROPAGATORS
+                Value: tracecontext,baggage
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER
+                Value: parentbased_traceidratio
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER_ARG
+                Value: "0.1"
+              - !Ref AWS::NoValue
           Secrets:
             - Name: MYSQL_USER
               ValueFrom: !Sub "${DbMasterSecretArn}:username::"
@@ -339,6 +383,26 @@ Resources:
               - Name: SQS_SIDE_EFFECTS_DLQ_URL
                 Value: !Ref SideEffectsDlqUrl
               - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_RESOURCE_ATTRIBUTES
+                Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=aws-optimized
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_PROPAGATORS
+                Value: tracecontext,baggage
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER
+                Value: parentbased_traceidratio
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER_ARG
+                Value: "0.1"
+              - !Ref AWS::NoValue
           Secrets:
             - Name: MYSQL_USER
               ValueFrom: !Sub "${DbMasterSecretArn}:username::"
@@ -377,6 +441,26 @@ Resources:
               Value: !Sub http://read.${SessionName}.railflux.local:${ReadPort}
             - Name: BOOKING_UPSTREAM
               Value: !Sub http://booking.${SessionName}.railflux.local:${BookingPort}
+            - !If
+              - HasRunId
+              - Name: OTEL_RESOURCE_ATTRIBUTES
+                Value: !Sub service.namespace=railflux,run_id=${RunId},deployment.profile=aws-optimized
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_PROPAGATORS
+                Value: tracecontext,baggage
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER
+                Value: parentbased_traceidratio
+              - !Ref AWS::NoValue
+            - !If
+              - HasRunId
+              - Name: OTEL_TRACES_SAMPLER_ARG
+                Value: "0.1"
+              - !Ref AWS::NoValue
           LogConfiguration:
             LogDriver: awslogs
             Options:

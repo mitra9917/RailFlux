@@ -52,7 +52,7 @@ Conditions:
 Metadata:
   RailFlux:
     Module: iam-task-roles
-    LayoutVersion: m5-issue-42
+    LayoutVersion: m5-issue-50
     St005Prep:
       ReadService: "No SQS actions"
       EdgeService: "No SQS actions"
@@ -354,6 +354,43 @@ Resources:
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/railflux/${SessionName}/edge/*
+
+  BaselineMonolithTelemetryPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsBaseline
+    Properties:
+      PolicyName: railflux-monolith-telemetry
+      Roles:
+        - !Ref BaselineMonolithTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - cloudwatch:PutMetricData
+            Resource: "*"
+
+  OptimizedTelemetryPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsOptimized
+    Properties:
+      PolicyName: railflux-optimized-telemetry
+      Roles:
+        - !Ref ReadTaskRole
+        - !Ref BookingTaskRole
+        - !Ref WorkerTaskRole
+        - !Ref EdgeTaskRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - cloudwatch:PutMetricData
+            Resource: "*"
 
 Outputs:
   EcsTaskExecutionRoleArn:
