@@ -10,6 +10,7 @@
 - [M1 acceptance gate](milestones/M1-acceptance.md)
 - [M2 acceptance gate](milestones/M2-acceptance.md)
 - [M3 acceptance gate](milestones/M3-acceptance.md)
+- [M4 acceptance gate](milestones/M4-acceptance.md)
 - [Definition of Done](definition-of-done.md)
 - [Requirements traceability](requirements-traceability.md)
 

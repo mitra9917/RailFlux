@@ -59,4 +59,4 @@ MYSQL_PORT=3307 npm run test:m3-tc003-009
 
 ## Exit
 
-M3 baseline booking correctness is complete. Next: **M4** optimized profile (read split, cache, queue/worker) per [implementation-plan.md](../implementation-plan.md).
+M3 baseline booking correctness is complete. Next: **M4** optimized profile — see [M4 acceptance gate](M4-acceptance.md).
