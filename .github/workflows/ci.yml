@@ -158,6 +158,11 @@ jobs:
           TC010_INTEGRATION: "1"
         run: npm run test:tc010
 
+      - name: FT-004 poison message DLQ
+        env:
+          FT004_INTEGRATION: "1"
+        run: npm run test:ft004-dlq
+
       - name: GET booking status after commit (TC-009)
         run: npm run test:get-booking
 
