@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RailFlux ALB, target groups, origin restriction (M5 P3 layout stub).
+
+Parameters:
+  SessionName:
+    Type: String
+
+Metadata:
+  RailFlux:
+    Module: alb-ingress
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  Module:
+    Value: alb-ingress

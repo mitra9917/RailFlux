@@ -55,6 +55,11 @@
     "gate:m2": "./scripts/m2-gate.sh",
     "gate:m3": "./scripts/m3-gate.sh",
     "gate:m4": "./scripts/m4-gate.sh",
+    "cfn:validate": "./infrastructure/scripts/cfn-validate.sh",
+    "aws:deploy:baseline": "./infrastructure/scripts/aws-deploy.sh aws-baseline",
+    "aws:deploy:optimized": "./infrastructure/scripts/aws-deploy.sh aws-optimized",
+    "aws:deploy:edge-waf": "./infrastructure/scripts/aws-deploy.sh aws-edge-waf",
+    "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
     "db:bootstrap": "npm run db:up && npm run db:load"

@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RailFlux optimized RDS read replica (M5 P2 layout stub).
+
+Parameters:
+  SessionName:
+    Type: String
+
+Metadata:
+  RailFlux:
+    Module: rds-replica
+    Profile: aws-optimized
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  Module:
+    Value: rds-replica

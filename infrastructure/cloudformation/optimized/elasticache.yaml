@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RailFlux ElastiCache Redis test-window module (M5 P2 layout stub).
+
+Parameters:
+  SessionName:
+    Type: String
+
+Metadata:
+  RailFlux:
+    Module: elasticache
+    Profile: aws-optimized
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  Module:
+    Value: elasticache

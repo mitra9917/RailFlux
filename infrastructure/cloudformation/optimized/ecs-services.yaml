@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RailFlux optimized read, booking, and edge Fargate services (M5 P3 layout stub).
+
+Parameters:
+  SessionName:
+    Type: String
+
+Metadata:
+  RailFlux:
+    Module: ecs-services
+    Profile: aws-optimized
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  Module:
+    Value: ecs-services

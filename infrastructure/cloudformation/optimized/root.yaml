@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  RailFlux aws-optimized root stack (M5 #41 layout). Split Fargate + RDS replica +
+  ElastiCache + SQS/DLQ + worker; nested modules added in follow-on M5 issues.
+
+Parameters:
+  DeploymentProfile:
+    Type: String
+    Default: aws-optimized
+    AllowedValues:
+      - aws-optimized
+  SessionName:
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  RunId:
+    Type: String
+    Default: ""
+  Owner:
+    Type: String
+    Default: railflux
+  ExpiresAt:
+    Type: String
+    Description: ISO8601 session teardown deadline (tag)
+  ApplicationRegion:
+    Type: String
+    Default: ap-south-1
+    AllowedValues:
+      - ap-south-1
+
+Metadata:
+  RailFlux:
+    Profile: aws-optimized
+    ApplicationRegion: ap-south-1
+    EdgeWafRegion: us-east-1
+    EdgeWafTemplate: edge/waf.yaml
+    LayoutVersion: m5-issue-41
+    PlannedNestedStacks:
+      - shared/session-bootstrap.yaml
+      - shared/network.yaml
+      - optimized/rds-primary.yaml
+      - optimized/rds-replica.yaml
+      - optimized/elasticache.yaml
+      - optimized/sqs-worker.yaml
+      - optimized/ecs-services.yaml
+      - baseline/alb-ingress.yaml
+      - shared/cloudfront-oac.yaml
+
+Resources: {}
+
+Outputs:
+  DeploymentProfile:
+    Value: !Ref DeploymentProfile
+  SessionName:
+    Value: !Ref SessionName
+  ApplicationRegion:
+    Value: !Ref ApplicationRegion
+  StackLayoutVersion:
+    Value: m5-issue-41

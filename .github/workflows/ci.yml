@@ -31,6 +31,9 @@ jobs:
       - name: Run CI checks
         run: npm run ci
 
+      - name: Validate CloudFormation layout (M5 #41)
+        run: npm run cfn:validate
+
       - name: Build Compose baseline profile images
         run: docker compose -f infrastructure/compose/docker-compose.yml --project-directory infrastructure/compose --profile baseline build
 

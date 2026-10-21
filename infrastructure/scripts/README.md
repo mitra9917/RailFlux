@@ -1,0 +1,17 @@
+# Infrastructure scripts
+
+AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-root `scripts/` for historical paths.
+
+## CloudFormation (M5 #41)
+
+| Script | Purpose |
+| --- | --- |
+| `cfn-validate.sh` | Structural checks + optional `aws cloudformation validate-template` |
+| `cfn-lib.sh` | Shared regions, stack names, tags (sourced by other scripts) |
+| `aws-deploy.sh` | Deploy `aws-baseline`, `aws-optimized`, or `aws-edge-waf` root stack |
+| `aws-teardown.sh` | Delete session stacks (`--profile all` checks both regions) |
+| `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
+
+Default application region: **`ap-south-1`**. CloudFront WAF edge stack: **`us-east-1`**.
+
+Run from repository root via `npm run cfn:validate` and `npm run aws:deploy:*`.

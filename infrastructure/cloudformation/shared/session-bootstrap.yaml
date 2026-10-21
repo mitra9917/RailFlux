@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RailFlux session bootstrap — budgets, ECR, artifacts (M5 P4/P5 layout stub).
+
+Parameters:
+  SessionName:
+    Type: String
+
+Metadata:
+  RailFlux:
+    Module: session-bootstrap
+    LayoutVersion: m5-issue-41
+
+Resources: {}
+
+Outputs:
+  Module:
+    Value: session-bootstrap

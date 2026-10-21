@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "SessionName",
+    "ParameterValue": "example-session"
+  },
+  {
+    "ParameterKey": "RunId",
+    "ParameterValue": "run-example-001"
+  },
+  {
+    "ParameterKey": "Owner",
+    "ParameterValue": "railflux-operator"
+  },
+  {
+    "ParameterKey": "ExpiresAt",
+    "ParameterValue": "2026-12-31T23:59:59Z"
+  },
+  {
+    "ParameterKey": "ApplicationRegion",
+    "ParameterValue": "ap-south-1"
+  }
+]
