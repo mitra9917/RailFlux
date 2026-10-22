@@ -39,6 +39,6 @@ done
 pwd="${MYSQL_PWD:-${MYSQL_PASSWORD:-}}"
 if [[ -n "$pwd" ]]; then
   exec docker compose -f "$COMPOSE_FILE" exec -T -e "MYSQL_PWD=${pwd}" \
-    mysql mysql --protocol=TCP -h127.0.0.1 -P3306 "${args[@]}"
+    mysql mysql --default-character-set=utf8mb4 --protocol=TCP -h127.0.0.1 -P3306 "${args[@]}"
 fi
-exec docker compose -f "$COMPOSE_FILE" exec -T mysql mysql --protocol=TCP -h127.0.0.1 -P3306 "${args[@]}"
+exec docker compose -f "$COMPOSE_FILE" exec -T mysql mysql --default-character-set=utf8mb4 --protocol=TCP -h127.0.0.1 -P3306 "${args[@]}"

@@ -14,6 +14,6 @@ DELETE FROM bookings;
 UPDATE seat_inventory
 SET available_seats = initial_seats,
     version = 0
-WHERE fixture_id COLLATE utf8mb4_unicode_ci = @fixture_id COLLATE utf8mb4_unicode_ci;
+WHERE fixture_id = @fixture_id;
 
 SET FOREIGN_KEY_CHECKS = 1;

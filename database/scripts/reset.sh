@@ -15,7 +15,8 @@ fi
 echo "reset experiment state for fixture ${fixture_id} on ${MYSQL_DATABASE}"
 
 mysql_exec <<SQL
-SET @fixture_id := '${fixture_id}' COLLATE utf8mb4_unicode_ci;
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET @fixture_id := '${fixture_id}';
 $(cat "${SCRIPT_DIR}/reset-experiment.sql")
 SQL
 
