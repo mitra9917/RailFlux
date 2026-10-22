@@ -55,6 +55,8 @@
     "gate:m2": "./scripts/m2-gate.sh",
     "gate:m3": "./scripts/m3-gate.sh",
     "gate:m4": "./scripts/m4-gate.sh",
+    "gate:m5": "./scripts/m5-gate.sh",
+    "test:m5-gate": "node --test tests/cfn-*.test.mjs tests/m5-gate.test.mjs",
     "cfn:validate": "./infrastructure/scripts/cfn-validate.sh",
     "aws:deploy:baseline": "./infrastructure/scripts/aws-deploy.sh aws-baseline",
     "aws:deploy:optimized": "./infrastructure/scripts/aws-deploy.sh aws-optimized",
@@ -86,6 +88,7 @@
     "aws:smoke:security-st004": "./infrastructure/scripts/aws-security-st004-smoke.sh",
     "aws:smoke:security-st005": "./infrastructure/scripts/aws-security-st005-smoke.sh",
     "aws:smoke:security": "./infrastructure/scripts/aws-security-smoke.sh",
+    "aws:gate:m5": "./infrastructure/scripts/aws-m5-gate.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
     "db:bootstrap": "npm run db:up && npm run db:load"
