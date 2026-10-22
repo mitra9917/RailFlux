@@ -79,6 +79,7 @@ From repository root:
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
 | `npm run aws:teardown:session` | Full session teardown + orphan audit (dry-run default) |
 | `npm run aws:audit:orphans` | Post-smoke account audit (`ap-south-1` + `us-east-1`) |
+| `npm run aws:smoke:security` | ST-004 + ST-005 with evidence JSON (M5 #54) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).
 

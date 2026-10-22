@@ -43,6 +43,7 @@
 - [Deployment runbook](runbooks/deployment.md)
 - [Experiment runbook](runbooks/experiment.md)
 - [Teardown runbook](runbooks/teardown.md)
+- [Security smoke runbook](runbooks/security-smoke.md)
 
 ## Experiment
 
