@@ -45,6 +45,7 @@
 - [Teardown runbook](runbooks/teardown.md)
 - [Security smoke runbook](runbooks/security-smoke.md)
 - [M5 acceptance gate](runbooks/m5-gate.md)
+- [PT-001 k6 smoke](runbooks/pt-001-smoke.md)
 
 ## Experiment
 
