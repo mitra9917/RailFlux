@@ -23,7 +23,6 @@ MAX_PAIRS=""
 DRY_RUN=0
 BASE_URL="${BASE_URL:-http://127.0.0.1:3000}"
 CELLS=""
-EXTRA=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -56,8 +55,9 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      EXTRA+=("$1")
-      shift
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
       ;;
   esac
 done
@@ -73,4 +73,4 @@ export MYSQL_PORT="${MYSQL_PORT:-3307}"
 export SYNTHETIC_JWT_SECRET="${SYNTHETIC_JWT_SECRET:-dev-only-change-me}"
 
 echo "==> Principal campaign ${CAMPAIGN_ID} (sequential pairs; invalid runs archived in experiment/runs/)"
-exec node "${ROOT}/experiment/campaign/run-principal-campaign.mjs" "${ARGS[@]}" "${EXTRA[@]}"
+exec node "${ROOT}/experiment/campaign/run-principal-campaign.mjs" "${ARGS[@]}"
