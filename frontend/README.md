@@ -1,6 +1,6 @@
 # Frontend
 
-React + Vite booking simulator (**Milestone M8**). Consumes [OpenAPI v1](../docs/design/api-spec.yaml); availability is **advisory** only (labeling in #73).
+React + Vite booking simulator (**Milestone M8**). Consumes [OpenAPI v1](../docs/design/api-spec.yaml); availability is **advisory** only (freshness copy in #74).
 
 ## Prerequisites
 
@@ -25,6 +25,8 @@ Open http://127.0.0.1:5173 — Vite **proxies** `/v1/*` and `/health/*` to port 
 
 1. **Home** — synthetic sign-in, ping health  
 2. **Search** — SAB → SAA (defaults), open **Availability** on a train run  
+3. **Book** — from 3A availability, POST with `Idempotency-Key`; on **425** the UI polls GET until terminal  
+4. **Booking status** — `/bookings/:id` for slow-path polling  
 
 Sign in with a fixture UUID or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
 

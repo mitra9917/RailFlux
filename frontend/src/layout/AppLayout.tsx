@@ -17,6 +17,9 @@ export function AppLayout() {
             <NavLink to="/search" className={({ isActive }) => (isActive ? 'active' : undefined)}>
               Search
             </NavLink>
+            <NavLink to="/book" className={({ isActive }) => (isActive ? 'active' : undefined)}>
+              Book
+            </NavLink>
           </nav>
         </div>
         <p className="muted api-base">
