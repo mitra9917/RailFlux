@@ -42,7 +42,7 @@ test('M8 #71 production build succeeds', () => {
   const res = spawnSync('npm', ['run', 'build:frontend'], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, VITE_API_BASE_URL: 'http://127.0.0.1:3000/api' },
+    env: { ...process.env, VITE_API_BASE_URL: 'http://127.0.0.1:3000' },
   });
   if (res.status !== 0) {
     console.error(res.stdout);

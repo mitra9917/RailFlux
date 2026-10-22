@@ -3,19 +3,23 @@ const UUID_RE =
 
 export const DEFAULT_SYNTHETIC_USER_ID = '11111111-1111-4111-8111-111111111111';
 
+/**
+ * API prefix for fetch(). Empty string = same-origin `/v1/*` (Vite dev proxy).
+ * Production may set `https://host/api` when paths in OpenAPI include `/v1` under that prefix.
+ */
 export function getApiBaseUrl(): string {
-  const raw = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (!raw) {
-    throw new Error('Set VITE_API_BASE_URL (see frontend/.env.example).');
+  const raw = import.meta.env.VITE_API_BASE_URL;
+  if (raw === undefined || raw.trim() === '') {
+    return '';
   }
-  return raw.replace(/\/$/, '');
+  return raw.trim().replace(/\/$/, '');
 }
 
-/** Origin for unauthenticated health probes (`/health/live`). */
-export function getApiOrigin(): string {
+/** Human-readable label for the settings panel. */
+export function describeApiBaseUrl(): string {
   const base = getApiBaseUrl();
-  if (base.endsWith('/api')) {
-    return base.slice(0, -4);
+  if (!base) {
+    return 'same-origin /v1 (Vite dev proxy → backend)';
   }
   return base;
 }
