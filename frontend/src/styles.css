@@ -346,3 +346,97 @@ button.secondary {
 .secondary-link {
   background: #64748b;
 }
+
+.compare-metrics .metric-block {
+  margin-top: 1.25rem;
+}
+
+.compare-chart {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+}
+
+.compare-chart th,
+.compare-chart td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.5rem;
+}
+
+.compare-chart td:nth-child(3),
+.compare-chart td:nth-child(5) {
+  width: 22%;
+}
+
+.bar.baseline {
+  height: 0.65rem;
+  border-radius: 2px;
+  background: #2563eb;
+  min-width: 2px;
+}
+
+.bar.optimized {
+  height: 0.65rem;
+  border-radius: 2px;
+  background: #16a34a;
+  min-width: 2px;
+}
+
+.note-inline {
+  font-size: 0.85rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.35rem;
+}
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 720px) {
+  .compare-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.compare-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+}
+
+.compare-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.compare-health {
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.compare-setup {
+  margin-top: 1rem;
+}
+
+.setup-pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
+
+.analysis-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}

@@ -4,6 +4,7 @@ import { AvailabilityPage } from './pages/AvailabilityPage';
 import { BookPage } from './pages/BookPage';
 import { BookingStatusPage } from './pages/BookingStatusPage';
 import { HomePage } from './pages/HomePage';
+import { ComparePage } from './pages/ComparePage';
 import { SearchPage } from './pages/SearchPage';
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="compare" element={<ComparePage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="availability" element={<AvailabilityPage />} />
           <Route path="book" element={<BookPage />} />
