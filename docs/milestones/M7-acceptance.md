@@ -3,5 +3,6 @@
 | Issue | Deliverable |
 | --- | --- |
 | #63 | PT-002 stepped calibration, pilot artifact, `npm run load:pt002`, freeze `hypotheses.yaml` |
+| #64 | `npm run experiment:principal-campaign`, four cells, sequential pairs, invalid run archive |
 
 Gate: [#70](https://github.com/mitra9917/RailFlux/issues/70).

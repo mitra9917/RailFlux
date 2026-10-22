@@ -33,6 +33,23 @@ test('M6 #59 pair order from randomization seed is deterministic', () => {
   assert.deepEqual(architecturesForPairOrder('BA'), ['optimized', 'baseline']);
 });
 
+test('M7 #64 generatePairManifests cacheConditionByArchitecture', () => {
+  const manifests = generatePairManifests({
+    pairId: 'pair-cache',
+    randomizationSeed: 0,
+    sessionName: 'lab',
+    cacheConditionByArchitecture: { baseline: 'none', optimized: 'warm' },
+  });
+  assert.equal(
+    manifests.find((m) => m.architecture === 'baseline').experiment.cache_condition,
+    'none',
+  );
+  assert.equal(
+    manifests.find((m) => m.architecture === 'optimized').experiment.cache_condition,
+    'warm',
+  );
+});
+
 test('M6 #59 generatePairManifests sets waf and cache fields', () => {
   const [first] = generatePairManifests({
     pairId: 'pair-test',
