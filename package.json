@@ -83,6 +83,9 @@
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
     "aws:teardown:session": "./infrastructure/scripts/aws-teardown-session.sh",
     "aws:audit:orphans": "./infrastructure/scripts/aws-orphan-audit.sh",
+    "aws:smoke:security-st004": "./infrastructure/scripts/aws-security-st004-smoke.sh",
+    "aws:smoke:security-st005": "./infrastructure/scripts/aws-security-st005-smoke.sh",
+    "aws:smoke:security": "./infrastructure/scripts/aws-security-smoke.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
     "db:bootstrap": "npm run db:up && npm run db:load"

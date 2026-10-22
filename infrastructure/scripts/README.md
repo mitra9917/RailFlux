@@ -22,6 +22,9 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-teardown-session.sh` | Runbook teardown order + orphan audit (`--dry-run` default, M5 #53) |
 | `aws-orphan-audit.sh` | Scan `ap-south-1` + `us-east-1`; fail if paid RailFlux orphans remain |
 | `aws-orphan-audit.mjs` | Orphan audit logic (also imported by tests) |
+| `aws-security-st004-smoke.sh` | ST-004 ALB origin header restriction |
+| `aws-security-st005-smoke.sh` / `aws-security-st005.mjs` | ST-005 IAM negative simulation |
+| `aws-security-smoke.sh` | ST-004 + ST-005 with JSON evidence (M5 #54) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 
 Default application region: **`ap-south-1`**. CloudFront WAF edge stack: **`us-east-1`**.
