@@ -35,4 +35,4 @@ reset_expectations:
   dlq_visible: 0
 checksums:
   schema_sha256: bc90b51e42c9972fd0a84a2517c6aa94446bc7d4b10db291d1e2923ea599e5d7
-  fixture_sha256: 80e036135f330058166c5278b9610c56982a74d3708c1b2a9e12d0b7cd0a8b8d
+  fixture_sha256: affcb96fdf0aee09361fd1423c5c6a3c5886afccfaba289cfc4816c61057d4b5

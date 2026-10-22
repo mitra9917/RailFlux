@@ -299,6 +299,34 @@ button.secondary {
   font-size: 0.9rem;
 }
 
+.freshness-label {
+  margin: 0.65rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.freshness-label-context {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.freshness-label-detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.freshness-label-note {
+  font-size: 0.85rem;
+}
+
 .status-dl {
   display: grid;
   grid-template-columns: auto 1fr;

@@ -28,7 +28,9 @@ Open http://127.0.0.1:5173 — Vite **proxies** `/v1/*` and `/health/*` to port 
 3. **Book** — from 3A availability, POST with `Idempotency-Key`; on **425** the UI polls GET until terminal  
 4. **Booking status** — `/bookings/:id` for slow-path polling  
 
-Sign in with a fixture UUID or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
+Sign in with the default demo UUID (seeded by `db-init` / `npm run db:load`) or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
+
+After pulling fixture seed changes, reload MySQL: `npm run db:load` (or recreate the compose `db-init` / MySQL volume).
 
 ## Build
 
