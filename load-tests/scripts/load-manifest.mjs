@@ -6,6 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseRunManifestText } from '../../infrastructure/scripts/aws-run-manifest.mjs';
+import {
+  arrivalRateForLoadLevel,
+  loadHypothesesCalibration,
+} from '../../experiment/campaign/read-hypotheses.mjs';
 
 function pick(text, pattern) {
   const m = text.match(pattern);
@@ -37,7 +41,18 @@ export function parseLoadManifest(manifestPath) {
  * @param {string} loadLevel
  * @param {number} fallback
  */
-export function loadLevelToArrivalRate(loadLevel, fallback = 8) {
+export function loadLevelToArrivalRate(loadLevel, fallback = 8, calibration = undefined) {
+  let cal = calibration;
+  if (cal === undefined) {
+    try {
+      cal = loadHypothesesCalibration(process.env.HYPOTHESES_PATH);
+    } catch {
+      cal = null;
+    }
+  }
+  if (cal?.frozen) {
+    return arrivalRateForLoadLevel(loadLevel, cal, fallback);
+  }
   const match = /^L(\d+)$/i.exec(String(loadLevel || '').trim());
   if (!match) return fallback;
   return Math.max(1, Math.min(50, Math.round(Number(match[1]) / 10)));

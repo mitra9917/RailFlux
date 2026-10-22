@@ -47,6 +47,7 @@
 - [M5 acceptance gate](runbooks/m5-gate.md)
 - [PT-001 k6 smoke](runbooks/pt-001-smoke.md)
 - [PT-002 calibration](runbooks/pt-002-calibration.md)
+- [Principal paired campaign](runbooks/principal-campaign.md)
 - [PT-005 / PT-006 from manifest](runbooks/load-from-manifest.md)
 
 ## Experiment

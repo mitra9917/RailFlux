@@ -10,10 +10,10 @@ import {
 
 const root = join(import.meta.dirname, '..');
 
-test('M6 #57 load_level maps to open-model RPS', () => {
-  assert.equal(loadLevelToArrivalRate('L80'), 8);
-  assert.equal(loadLevelToArrivalRate('L30'), 3);
-  assert.equal(loadLevelToArrivalRate('bad', 5), 5);
+test('M6 #57 load_level maps to open-model RPS without frozen calibration', () => {
+  assert.equal(loadLevelToArrivalRate('L80', 8, null), 8);
+  assert.equal(loadLevelToArrivalRate('L30', 8, null), 3);
+  assert.equal(loadLevelToArrivalRate('bad', 5, null), 5);
 });
 
 test('M6 #57 resolveLoadPlan reads experiment fields', () => {
@@ -23,7 +23,8 @@ test('M6 #57 resolveLoadPlan reads experiment fields', () => {
   assert.equal(parsed.loadLevel, 'L30');
   assert.equal(parsed.durationSeconds, 30);
   const plan = resolveLoadPlan(join(root, 'experiment/load-pt-local.example.yaml'));
-  assert.equal(plan.rate, 3);
+  // L30 has no frozen pct_* mapping; heuristic L30 → 3 RPS (or calibrated if extended later).
+  assert.equal(plan.rate, loadLevelToArrivalRate('L30'));
   assert.equal(plan.duration, '30s');
   assert.equal(plan.runPt006, true);
 });

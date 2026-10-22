@@ -258,12 +258,15 @@ export function generatePairManifests(options) {
     const runId =
       options.runIdPattern?.(architecture, index) ??
       `run-${options.pairId}-${architecture}`;
+    const cacheFromMap = options.cacheConditionByArchitecture?.[architecture];
+    const cacheCondition = cacheFromMap ?? options.cacheCondition ?? 'none';
     return buildRunManifest({
       ...options,
       pairOrder,
       architecture,
       runId,
       requestSeed,
+      cacheCondition,
     });
   });
 }
