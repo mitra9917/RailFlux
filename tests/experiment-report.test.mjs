@@ -59,19 +59,50 @@ test('M7 #68 report markdown includes DoD section and limitations', () => {
   assert.match(md, /Not assessed in this export/);
 });
 
-test('M7 #68 buildExperimentReportContext from campaign file', () => {
-  const campaign = JSON.parse(
-    readFileSync(join(root, 'experiment/campaigns/principal-local-001.json'), 'utf8'),
-  );
+test('M7 #68 buildExperimentReportContext from campaign plan', () => {
+  const campaign = {
+    plan: {
+      campaign_id: 'ci-fixture-campaign',
+      event: 'principal_campaign_plan',
+      duration_seconds: 180,
+      cells: ['C1-L80-legit'],
+      pairs: [
+        {
+          pair_id: 'C1-L80-legit-r01',
+          cell_id: 'C1-L80-legit',
+          load_level: 'L80',
+          randomization_seed: 880001,
+          manifests: [
+            {
+              architecture: 'baseline',
+              run_id: 'ci-fixture-campaign-C1-L80-legit-r01-baseline',
+              deployment: { application_region: 'ap-south-1' },
+              versions: { application_git_sha: 'abc', infrastructure_git_sha: 'abc' },
+              fixture: { sha256: 'fixture-sha', request_seed: 880001 },
+              experiment: { duration_seconds: 180 },
+            },
+            {
+              architecture: 'optimized',
+              run_id: 'ci-fixture-campaign-C1-L80-legit-r01-optimized',
+              deployment: { application_region: 'ap-south-1' },
+              versions: { application_git_sha: 'abc', infrastructure_git_sha: 'abc' },
+              fixture: { sha256: 'fixture-sha', request_seed: 880001 },
+              experiment: { duration_seconds: 180 },
+            },
+          ],
+        },
+      ],
+    },
+  };
   const ctx = buildExperimentReportContext({
     campaign,
     runsDir: join(root, 'experiment/runs'),
     hypothesesPath: join(root, 'experiment/hypotheses.yaml'),
   });
-  assert.equal(ctx.campaignId, 'principal-local-001');
+  assert.equal(ctx.campaignId, 'ci-fixture-campaign');
   assert.equal(ctx.hypothesesMeta.status, 'frozen');
   const md = renderExperimentReport(ctx);
-  assert.match(md, /principal-local-001/);
+  assert.match(md, /ci-fixture-campaign/);
 });
 
 test('M7 #68 npm script entry', () => {
