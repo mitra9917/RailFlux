@@ -23,7 +23,11 @@ npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --wor
 npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --dry-run
 ```
 
-See [Experiment runbook](../../docs/runbooks/experiment.md) for protocol context. AWS deploy, pair randomization (M6-P3), and full `result.schema.json` export (M6-P4) are separate steps.
+See [Experiment runbook](../../docs/runbooks/experiment.md) for protocol context.
+
+**Pair manifests (M6 #59):** `npm run experiment:generate-manifest` — [runbook](../../docs/runbooks/run-manifest-generator.md).
+
+AWS deploy and full `result.schema.json` export (M6-P4) are separate steps.
 
 ## Scripts
 

@@ -137,7 +137,7 @@ fail_invalid() {
 echo "==> Experiment controller run_id=${RUN_ID} manifest=${MANIFEST_ABS} workload=${WORKLOAD}"
 
 protocol_step "1_freeze_versions" "skipped" "local; record in manifest versions.*"
-protocol_step "2_pair_randomization" "skipped" "M6-P3 generator; pair_order in manifest"
+protocol_step "2_pair_randomization" "skipped" "use npm run experiment:generate-manifest if not pre-generated"
 protocol_step "3_deploy_profile" "skipped" "use compose:baseline or compose:optimized"
 protocol_step "7_capacity" "skipped" "local fixed stack; see manifest resources"
 

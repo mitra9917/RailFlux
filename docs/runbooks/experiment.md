@@ -14,7 +14,9 @@ npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --sce
 
 Options: `--workload pt001|manifest`, `--dry-run`, `--skip-reset`, `--skip-load`, `--skip-correctness`, `--base-url`. Output: `experiment/runs/<run_id>.json` (run index linking k6 artifacts and correctness). Full `result.schema.json` assembly is M6-P4.
 
-Deploy (step 3), pair randomization (step 2), and teardown (step 15) remain manual/AWS runbooks.
+**Pair randomization (step 2):** [run manifest generator](./run-manifest-generator.md) — `npm run experiment:generate-manifest`.
+
+Deploy (step 3) and teardown (step 15) remain manual/AWS runbooks.
 
 ## Before a pair
 
