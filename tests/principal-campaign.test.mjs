@@ -11,7 +11,11 @@ import {
   PRINCIPAL_CELLS,
   selectPrincipalCells,
 } from '../experiment/campaign/principal-cells.mjs';
-import { buildCampaignPlan } from '../experiment/campaign/run-principal-campaign.mjs';
+import {
+  buildCampaignPlan,
+  DEFAULT_PRINCIPAL_DURATION_SECONDS,
+  SMOKE_DURATION_SECONDS,
+} from '../experiment/campaign/run-principal-campaign.mjs';
 import {
   generatePairManifests,
 } from '../experiment/controller/generate-run-manifest.mjs';
@@ -34,6 +38,22 @@ test('M7 #64 campaign plan default 20 pairs and 40 runs', () => {
 test('M7 #64 max-pairs budget reduction', () => {
   const plan = buildCampaignPlan({ campaignId: 'test', repetitions: 5, maxPairs: 2 });
   assert.equal(plan.pair_count, 2);
+});
+
+test('M7 #64 smoke duration on manifests', () => {
+  const plan = buildCampaignPlan({
+    campaignId: 'test',
+    repetitions: 1,
+    maxPairs: 1,
+    cellIds: ['C1-L80-legit'],
+    durationSeconds: SMOKE_DURATION_SECONDS,
+  });
+  assert.equal(plan.duration_seconds, SMOKE_DURATION_SECONDS);
+  assert.equal(
+    plan.pairs[0].manifests[0].experiment.duration_seconds,
+    SMOKE_DURATION_SECONDS,
+  );
+  assert.equal(DEFAULT_PRINCIPAL_DURATION_SECONDS, 180);
 });
 
 test('M7 #64 frozen hypotheses map L80/L110 to calibrated RPS', () => {

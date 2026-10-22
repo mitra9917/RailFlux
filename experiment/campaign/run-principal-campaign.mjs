@@ -23,6 +23,11 @@ const RUNS_DIR = path.join(REPO_ROOT, 'experiment/runs');
 const CAMPAIGNS_DIR = path.join(REPO_ROOT, 'experiment/campaigns');
 const CONTROLLER = path.join(REPO_ROOT, 'experiment/controller/run.sh');
 
+/** Confirmatory protocol duration (seconds). */
+export const DEFAULT_PRINCIPAL_DURATION_SECONDS = 180;
+/** Local smoke: 1 min k6 per scenario (PT-005 + PT-006 still run at frozen RPS). */
+export const SMOKE_DURATION_SECONDS = 60;
+
 function gitHeadSha() {
   const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : 'TO_SET';
@@ -52,6 +57,7 @@ export function buildCampaignPlan(options) {
     repetitions = DEFAULT_REPETITIONS,
     cellIds = [],
     maxPairs = null,
+    durationSeconds = DEFAULT_PRINCIPAL_DURATION_SECONDS,
   } = options;
 
   const cells = selectPrincipalCells(PRINCIPAL_CELLS, cellIds);
@@ -71,7 +77,7 @@ export function buildCampaignPlan(options) {
         inventoryProfile: cell.inventoryProfile,
         cohortMix: cell.cohortMix,
         cacheConditionByArchitecture: cell.cacheConditionByArchitecture,
-        durationSeconds: 180,
+        durationSeconds,
         runIdPattern: (architecture) => `${campaignId}-${pairId}-${architecture}`,
       });
       for (const m of manifests) assertTemplateStructure(m);
@@ -98,6 +104,7 @@ export function buildCampaignPlan(options) {
     cells: cells.map((c) => c.id),
     pair_count: limited.length,
     run_count: limited.length * 2,
+    duration_seconds: durationSeconds,
     pairs: limited,
   };
 }
@@ -220,18 +227,33 @@ function parseArgs(argv) {
     dryRun: false,
     maxPairs: null,
     cellIds: [],
+    durationSeconds: DEFAULT_PRINCIPAL_DURATION_SECONDS,
+    smoke: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--campaign-id' && argv[i + 1]) out.campaignId = argv[++i];
     else if (a === '--session-name' && argv[i + 1]) out.sessionName = argv[++i];
     else if (a === '--base-url' && argv[i + 1]) out.baseUrl = argv[++i];
-    else if (a === '--reps' && argv[i + 1]) out.repetitions = Number(argv[++i]);
-    else if (a === '--base-seed' && argv[i + 1]) out.baseSeed = Number(argv[++i]);
-    else if (a === '--max-pairs' && argv[i + 1]) out.maxPairs = Number(argv[++i]);
-    else if (a === '--cells' && argv[i + 1]) out.cellIds = argv[++i].split(',').filter(Boolean);
+    else if (a === '--reps' && argv[i + 1]) {
+      out.repetitions = Number(argv[++i]);
+      out.repsExplicit = true;
+    } else if (a === '--base-seed' && argv[i + 1]) out.baseSeed = Number(argv[++i]);
+    else if (a === '--max-pairs' && argv[i + 1]) {
+      out.maxPairs = Number(argv[++i]);
+      out.maxPairsExplicit = true;
+    } else if (a === '--duration-seconds' && argv[i + 1]) {
+      out.durationSeconds = Number(argv[++i]);
+    } else if (a === '--cells' && argv[i + 1]) out.cellIds = argv[++i].split(',').filter(Boolean);
+    else if (a === '--smoke') out.smoke = true;
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--help' || a === '-h') out.help = true;
+  }
+  if (out.smoke) {
+    out.durationSeconds = SMOKE_DURATION_SECONDS;
+    if (!out.maxPairsExplicit) out.maxPairs = 1;
+    if (!out.repsExplicit) out.repetitions = 1;
+    if (!out.cellIds.length) out.cellIds = ['C1-L80-legit'];
   }
   return out;
 }
@@ -242,6 +264,8 @@ function main() {
     console.log(`Usage: run-principal-campaign.mjs [options]
   --campaign-id ID   --session-name NAME   --base-url URL
   --reps N (default 5)   --max-pairs N (budget reduction)
+  --duration-seconds N (default 180; smoke uses 60)
+  --smoke   1 pair, 1 rep, C1-L80-legit, 60s k6 per scenario (local only)
   --cells C1-L80-legit,C2-L110-legit,...   --dry-run`);
     process.exit(0);
   }
@@ -265,6 +289,7 @@ function main() {
     repetitions: args.repetitions,
     cellIds: args.cellIds,
     maxPairs: args.maxPairs,
+    durationSeconds: args.durationSeconds,
   });
 
   const manifestDir = path.join(CAMPAIGNS_DIR, args.campaignId, 'manifests');

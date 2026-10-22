@@ -14,15 +14,25 @@ Runs the **minimum viable principal campaign** from [protocol](../experiment/pro
 npm run experiment:principal-campaign -- --dry-run
 ```
 
-## Budget-reduced local smoke
+## Budget-reduced local smoke (~4 min per pair)
+
+Uses **60s** k6 per scenario (PT-005 + PT-006) at frozen RPS—not the confirmatory **180s**. Same gates; not for published confirmatory results.
+
+```bash
+export SYNTHETIC_JWT_SECRET='dev-only-change-me'
+export MYSQL_PORT=3307
+npm run experiment:principal-campaign:smoke
+```
+
+Or explicitly:
 
 ```bash
 npm run experiment:principal-campaign -- \
-  --campaign-id principal-smoke-001 \
-  --cells C1-L80-legit \
-  --max-pairs 1 \
-  --reps 1
+  --smoke \
+  --campaign-id principal-smoke-001
 ```
+
+Custom duration without full smoke defaults: `--duration-seconds 60` (minimum useful local value).
 
 ## Full campaign (local)
 
@@ -46,4 +56,6 @@ Load levels **L80** / **L110** map to frozen `progressive_load_rps` (e.g. 32 / 4
 
 - `--reps N` — repetitions per cell (default 5).
 - `--max-pairs N` — stop after N pairs (documented budget reduction).
+- `--duration-seconds N` — k6 duration per scenario (default **180**; smoke **60**).
+- `--smoke` — local smoke preset: 1 pair, 1 rep, C1-L80-legit, 60s, relaxed host preflight (85%).
 - `--cells C1-L80-legit,C3-L80-mixed` — subset of cells.
