@@ -11,6 +11,7 @@ coverage/
 .idea/
 .vscode/
 *.swp
+experiment/generated/
 experiment/runs/*.json
 !experiment/runs/.gitkeep
 load-tests/results/*

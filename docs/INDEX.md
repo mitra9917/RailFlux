@@ -74,3 +74,4 @@
 - [Load tests](../load-tests/README.md)
 - [Frontend](../frontend/README.md) (M8)
 - [Experiment controller](../experiment/controller/README.md)
+- [Run manifest generator](runbooks/run-manifest-generator.md)

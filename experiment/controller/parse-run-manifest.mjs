@@ -19,6 +19,7 @@ export function parseControllerManifestText(text) {
   const pairId = pick(text, /^pair_id:\s*(\S+)/m);
   const pairOrder = pick(text, /^pair_order:\s*(\S+)/m);
   const cacheCondition = pick(text, /^  cache_condition:\s*(\S+)/m) || 'none';
+  const wafMode = pick(text, /^  waf_mode:\s*"?([^"\n#]+)"?/m) || 'off';
   const fixtureSha256 = pick(text, /^  sha256:\s*(\S+)/m);
   const legitimate = Number(pick(text, /^    legitimate:\s*([\d.]+)/m) || 1);
   const botLike = Number(pick(text, /^    bot_like:\s*([\d.]+)/m) || 0);
@@ -29,6 +30,7 @@ export function parseControllerManifestText(text) {
     pairId,
     pairOrder: pairOrder === 'BA' ? 'BA' : 'AB',
     cacheCondition,
+    wafMode,
     fixtureSha256,
     requestSeed,
     cohortMix: { legitimate, bot_like: botLike },
