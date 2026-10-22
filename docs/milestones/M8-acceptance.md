@@ -1,7 +1,7 @@
-# M8 acceptance (in progress)
+# M8 acceptance
 
 **Milestone:** M8 — Frontend booking simulator  
-**Gate issue:** #75 (planned)
+**Gate issue:** #75 — `npm run gate:m8`, [runbook](../runbooks/m8-gate.md), [sign-off](./M8-gate-signoff.md)
 
 | Issue | Deliverable |
 | --- | --- |
