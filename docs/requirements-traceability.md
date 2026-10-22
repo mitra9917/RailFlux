@@ -128,8 +128,8 @@ Side effects are triggered by `createBooking` but validated via worker/queue beh
 
 - **Requirement:** another contributor can recreate a run.
 - **Design:** fixture checksums, seeds, immutable versions, run manifests, AB/BA order.
-- **Tests:** clean-state walkthrough.
-- **Evidence:** manifest, artifact links, protocol and runbook.
+- **Tests:** clean-state walkthrough (`npm run gate:m7-repro`; live pair via [reproducibility walkthrough](runbooks/reproducibility-walkthrough.md)).
+- **Evidence:** manifest, artifact links, protocol and runbook; [walkthrough notes](milestones/reproducibility-walkthrough-notes.md).
 - **Acceptance:** second contributor reproduces setup and obtains a valid smoke run.
 
 ---

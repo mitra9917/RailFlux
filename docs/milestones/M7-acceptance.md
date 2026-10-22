@@ -8,5 +8,6 @@
 | #66 | `npm run experiment:analyze-pairs`, log-ratio paired bootstrap 95% CI, Holm secondaries |
 | #67 | `npm run experiment:results-dashboard`, cost parity tables, HTML charts linked from report |
 | #68 | `npm run experiment:generate-report`, DoD Evidence checklist from measured artifacts |
+| #69 | [Reproducibility walkthrough](../runbooks/reproducibility-walkthrough.md), [notes template](./reproducibility-walkthrough-notes.md), `npm run experiment:verify-repro-pair`, `npm run gate:m7-repro` |
 
 Gate: [#70](https://github.com/mitra9917/RailFlux/issues/70).
