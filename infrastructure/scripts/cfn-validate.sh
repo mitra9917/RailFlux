@@ -37,6 +37,10 @@ if command -v aws >/dev/null 2>&1; then
   if aws sts get-caller-identity >/dev/null 2>&1; then
     for template in "${TEMPLATES[@]}"; do
       rel="${template#"${ROOT}/"}"
+      if grep -qE '^Resources: \{\}[[:space:]]*$' "${template}"; then
+        echo "  aws skip  ${rel} (empty Resources — metadata stub, not deployable)"
+        continue
+      fi
       region="${RAILFLUX_APP_REGION}"
       if [[ "${template}" == *"/edge/"* ]]; then
         region="${RAILFLUX_EDGE_REGION}"
