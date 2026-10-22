@@ -11,6 +11,7 @@
 - [M2 acceptance gate](milestones/M2-acceptance.md)
 - [M3 acceptance gate](milestones/M3-acceptance.md)
 - [M4 acceptance gate](milestones/M4-acceptance.md)
+- [M7 acceptance gate](milestones/M7-acceptance.md)
 - [Definition of Done](definition-of-done.md)
 - [Requirements traceability](requirements-traceability.md)
 
@@ -53,6 +54,7 @@
 - [Results dashboard](runbooks/results-dashboard.md)
 - [Experiment report generator](runbooks/experiment-report.md)
 - [Second-contributor reproducibility walkthrough](runbooks/reproducibility-walkthrough.md)
+- [M7 acceptance gate](runbooks/m7-gate.md)
 - [PT-005 / PT-006 from manifest](runbooks/load-from-manifest.md)
 
 ## Experiment
