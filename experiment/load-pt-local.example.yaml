@@ -1,0 +1,24 @@
+# Short local PT-005/PT-006 run (copy and set run_id before load tests).
+schema_version: "1.0"
+run_id: run-pt-local-001
+pair_id: load-dev
+pair_order: AB
+architecture: baseline
+deployment:
+  session_name: load-local
+  owner: railflux-operator
+  application_region: ap-south-1
+fixture:
+  id: railflux-tatkal-v1
+  sha256: TO_SET
+  request_seed: 772910
+experiment:
+  inventory_profile: contention
+  cache_condition: none
+  load_level: L30
+  duration_seconds: 30
+  waf_mode: "off"
+cost:
+  estimated_hourly_usd: "0"
+  maximum_session_hours: "1"
+  expires_at: 2026-12-31T23:59:59Z

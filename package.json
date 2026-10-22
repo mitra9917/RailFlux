@@ -46,6 +46,7 @@
     "run:correctness": "node database/scripts/run-correctness.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
     "load:pt001": "./load-tests/scripts/run-pt001-smoke.sh",
+    "load:manifest": "./load-tests/scripts/run-load-from-manifest.sh",
     "compose:baseline": "./scripts/compose-baseline-up.sh",
     "compose:optimized": "./scripts/compose-optimized-up.sh",
     "compose:status": "./scripts/compose-status.sh",

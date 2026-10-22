@@ -21,8 +21,8 @@ Scope tags: **[Both]**, **[Baseline]**, or **[Optimized]** identify applicable d
 - **[Baseline] PT-002 Calibration:** stepped open load finds baseline SLO capacity.
 - **[Both] PT-003 Release burst:** instantaneous jump followed by 90-second peak.
 - **[Both] PT-004 Progressive load:** 50%, 80%, and 110% of calibrated capacity.
-- **[Both] PT-005 Mixed traffic:** 70/20/10 search/availability/booking.
-- **[Both] PT-006 Contention:** oversubscribed common inventory.
+- **[Both] PT-005 Mixed traffic:** 70/20/10 search/availability/booking. `npm run load:manifest -- --scenario pt005` ([runbook](../docs/runbooks/load-from-manifest.md)).
+- **[Both] PT-006 Contention:** oversubscribed common inventory. `--scenario pt006` or `both` with `inventory_profile: contention`.
 - **[Both] PT-007 Non-contention:** sufficient distributed inventory.
 - **[Optimized] PT-008 Cache cold/warm:** isolates cache effect from task startup.
 - **[Both] PT-009 Legitimate + bot-like:** 80/20 principal and 50/50 exploratory mixes.
