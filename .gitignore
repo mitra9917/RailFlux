@@ -12,6 +12,7 @@ coverage/
 .vscode/
 *.swp
 experiment/generated/
+experiment/generated-gate/
 experiment/runs/*.json
 !experiment/runs/.gitkeep
 load-tests/results/*
