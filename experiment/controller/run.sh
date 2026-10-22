@@ -188,7 +188,13 @@ protocol_step "8_health_preflight" "pending" ""
 if (( VALID == 1 && DRY_RUN == 0 )); then
   export BASELINE_HEALTH_URL="${BASE_URL}"
   if "${ROOT}/scripts/check-baseline-health.sh"; then
-    protocol_step "8_health_preflight" "passed" "health ok; generator CPU gate at k6 runtime"
+    if GENERATOR_PREFLIGHT_JSON="$("${ROOT}/load-tests/scripts/run-generator-preflight.sh" --base-url "${BASE_URL}")"; then
+      export GENERATOR_PREFLIGHT_JSON
+      protocol_step "8_health_preflight" "passed" "health + generator host/network preflight"
+    else
+      protocol_step "8_health_preflight" "failed" "generator preflight"
+      fail_invalid "generator_preflight_failed"
+    fi
   else
     protocol_step "8_health_preflight" "failed" "health check"
     fail_invalid "health_check_failed"

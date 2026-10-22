@@ -57,7 +57,8 @@ export function buildExperimentResult(input, options = {}) {
   };
 
   const corrPassed = correctnessPassed(input.correctness);
-  const valid = Boolean(input.valid) && corrPassed;
+  const preflightOk = input.generatorPreflight?.ok !== false;
+  const valid = Boolean(input.valid) && corrPassed && preflightOk;
 
   /** @type {Record<string, unknown>} */
   const result = {
@@ -72,7 +73,13 @@ export function buildExperimentResult(input, options = {}) {
     latencyMs: metrics.latencyMs,
     correctness_passed: corrPassed,
     valid,
-    invalid_reason: valid ? null : input.invalidReason || 'run_invalid',
+    invalid_reason: valid
+      ? null
+      : !preflightOk
+        ? 'generator_preflight_failed'
+        : input.invalidReason || 'run_invalid',
+    generator_cpu_max_pct:
+      input.generatorPreflight?.generator_cpu_max_pct ?? undefined,
     artifacts: {
       k6_raw: metrics.artifactPaths?.k6_raw || undefined,
       metrics: metrics.artifactPaths?.metrics || undefined,

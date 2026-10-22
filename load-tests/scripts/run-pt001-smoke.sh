@@ -73,6 +73,7 @@ fi
 export BASELINE_HEALTH_URL="${BASE_URL}"
 echo "==> PT-001 preflight health ${BASE_URL}"
 "${ROOT}/scripts/check-baseline-health.sh"
+"${ROOT}/load-tests/scripts/run-generator-preflight.sh" --base-url "${BASE_URL}"
 
 SECRET="${SYNTHETIC_JWT_SECRET:-dev-only-change-me}"
 export SYNTHETIC_JWT_SECRET="${SECRET}"
@@ -99,5 +100,10 @@ PT001_RATE="${RATE}" PT001_DURATION="${DURATION}" BASE_URL="${BASE_URL}" \
 BASE_URL="${BASE_URL}" PT001_RATE="${RATE}" PT001_DURATION="${DURATION}" \
   node "${ROOT}/load-tests/scripts/write-pt001-artifact.mjs" \
   "${RUN_ID}" "${SUMMARY}" "${RAW}" "${ARTIFACT}"
+
+if ! node "${ROOT}/load-tests/scripts/generator-preflight.mjs" k6-summary "${SUMMARY}"; then
+  echo "PT-001 generator preflight failed." >&2
+  exit 1
+fi
 
 echo "PT-001 smoke complete. Attach artifact index: ${ARTIFACT}"

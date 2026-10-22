@@ -81,6 +81,7 @@ function main() {
     manifestPath,
     manifest,
     fixtureVerification: readJsonOrNull(fixtureJson),
+    generatorPreflight: readJsonOrNull(process.env.GENERATOR_PREFLIGHT_JSON),
     protocolSteps,
     k6Artifacts,
     correctness,

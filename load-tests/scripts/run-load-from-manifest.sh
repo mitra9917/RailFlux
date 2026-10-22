@@ -112,6 +112,13 @@ run_k6() {
     node "${ROOT}/load-tests/scripts/write-load-artifact.mjs" \
     "${test_id}" "${run_id}" "${summary}" "${raw}" "${artifact}"
   echo "    artifact: ${artifact}"
+
+  if (( DRY_RUN == 0 )); then
+    if ! node "${ROOT}/load-tests/scripts/generator-preflight.mjs" k6-summary "${summary}"; then
+      echo "Generator preflight failed for ${test_id} (see JSON above)." >&2
+      return 1
+    fi
+  fi
 }
 
 if ! command -v k6 >/dev/null 2>&1; then
@@ -123,6 +130,7 @@ export BASELINE_HEALTH_URL="${BASE_URL}"
 echo "==> Load preflight manifest=${MANIFEST} scenario=${SCENARIO}"
 if (( DRY_RUN == 0 )); then
   "${ROOT}/scripts/check-baseline-health.sh"
+  "${ROOT}/load-tests/scripts/run-generator-preflight.sh" --base-url "${BASE_URL}"
   # shellcheck source=resolve-k6-auth.sh
   source "${ROOT}/load-tests/scripts/resolve-k6-auth.sh"
 fi
