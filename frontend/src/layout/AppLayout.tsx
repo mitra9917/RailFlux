@@ -14,6 +14,9 @@ export function AppLayout() {
             <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : undefined)}>
               Home
             </NavLink>
+            <NavLink to="/compare" className={({ isActive }) => (isActive ? 'active' : undefined)}>
+              Compare
+            </NavLink>
             <NavLink to="/search" className={({ isActive }) => (isActive ? 'active' : undefined)}>
               Search
             </NavLink>

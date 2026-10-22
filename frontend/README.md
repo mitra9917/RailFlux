@@ -27,6 +27,12 @@ Open http://127.0.0.1:5173 — Vite **proxies** `/v1/*` and `/health/*` to port 
 2. **Search** — SAB → SAA (defaults), open **Availability** on a train run  
 3. **Book** — from 3A availability, POST with `Idempotency-Key`; on **425** the UI polls GET until terminal  
 4. **Booking status** — `/bookings/:id` for slow-path polling  
+5. **Compare** — baseline vs optimized metrics + side-by-side live booking probe ([submission demo](../docs/submission-demo.md))  
+
+```bash
+npm run compare:dual-stack   # baseline :3000 + optimized :3001
+npm run dev:frontend         # open /compare
+```
 
 Sign in with the default demo UUID (seeded by `db-init` / `npm run db:load`) or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
 
