@@ -1,9 +1,10 @@
-/** Displayed availability / inventory is advisory (M8 #73 — full copy polish in #74). */
+import { ADVISORY_ALLOCATION_NOTE } from '../lib/freshness-labels';
+
+/** Static advisory policy on read/book flows (M8 #74). */
 export function AdvisoryBanner() {
   return (
     <p className="advisory-banner" role="note">
-      Advisory only — seat counts and availability are not authoritative. Confirm outcome via booking
-      status, not displayed inventory.
+      <strong>Advisory only.</strong> {ADVISORY_ALLOCATION_NOTE}
     </p>
   );
 }

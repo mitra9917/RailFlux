@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { getAvailability, type AvailabilityParams } from '../api/search';
 import type { Availability, TravelClass } from '@railflux/shared/api-types';
+import { AdvisoryBanner } from '../components/AdvisoryBanner';
+import { FreshnessLabel } from '../components/FreshnessLabel';
 import { TC001_INVENTORY_3A_ID } from '../fixtures/tc001-demo';
 
 const CLASSES: TravelClass[] = ['SL', '3A', '2A'];
@@ -75,6 +77,7 @@ export function AvailabilityPage() {
   return (
     <section className="panel">
       <h2>Availability</h2>
+      <AdvisoryBanner />
       {!trainRunId ? (
         <p className="error">
           Missing train run — start from <Link to="/search">Search</Link>.
@@ -82,7 +85,7 @@ export function AvailabilityPage() {
       ) : (
         <>
           <p className="muted">
-            Run <code>{trainRunId}</code> · displayed seats are advisory (not authoritative inventory).
+            Run <code>{trainRunId}</code> · Tatkal quota · class {travelClass}
           </p>
           <div className="class-tabs" role="tablist" aria-label="Travel class">
             {CLASSES.map((c) => (
@@ -102,11 +105,8 @@ export function AvailabilityPage() {
           {error ? <p className="error">{error}</p> : null}
           {availability ? (
             <div className="availability-card">
-              <p className="availability-count">{availability.displayedSeats} seats shown</p>
-              <p className="muted">
-                Cache {availability.freshness.cacheStatus} · observed{' '}
-                {new Date(availability.freshness.observedAt).toLocaleString()}
-              </p>
+              <p className="availability-count">{availability.displayedSeats} seats shown (advisory)</p>
+              <FreshnessLabel freshness={availability.freshness} context="Displayed availability" />
               {travelClass === '3A' ? (
                 <Link
                   className="button-link"

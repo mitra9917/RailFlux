@@ -100,6 +100,9 @@ const COHORTS = [
   'duplicate_submitter',
 ];
 
+/** Pinned for TC-001 / M8 simulator defaults (tests/helpers/tc001-fixture.mjs). */
+const TC001_DEMO_USER_ID = '11111111-1111-4111-8111-111111111111';
+
 function main() {
   const manifestPath = process.env.FIXTURE_MANIFEST
     ? path.resolve(process.env.FIXTURE_MANIFEST)
@@ -125,6 +128,9 @@ function main() {
       `INSERT INTO users (id, cohort) VALUES (${sqlString(id)}, ${sqlString(cohort)});`,
     );
   }
+  lines.push(
+    `INSERT INTO users (id, cohort) VALUES (${sqlString(TC001_DEMO_USER_ID)}, ${sqlString('browser')});`,
+  );
 
   for (let t = 0; t < manifest.trains; t += 1) {
     const trainNo = String(10001 + t).padStart(5, '0');

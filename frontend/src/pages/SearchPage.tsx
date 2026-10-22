@@ -2,7 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { searchTrains } from '../api/search';
-import type { TrainRun } from '@railflux/shared/api-types';
+import type { Freshness, TrainRun } from '@railflux/shared/api-types';
+import { AdvisoryBanner } from '../components/AdvisoryBanner';
+import { FreshnessLabel } from '../components/FreshnessLabel';
 
 const DEFAULT_FROM = 'SAB';
 const DEFAULT_TO = 'SAA';
@@ -15,22 +17,18 @@ export function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<TrainRun[]>([]);
-  const [freshnessNote, setFreshnessNote] = useState<string | null>(null);
+  const [freshness, setFreshness] = useState<Freshness | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setItems([]);
-    setFreshnessNote(null);
+    setFreshness(null);
     try {
       const data = await searchTrains({ from, to, date });
       setItems(data.items);
-      setFreshnessNote(
-        data.freshness?.authoritative === false
-          ? `Advisory listing · cache ${data.freshness.cacheStatus}`
-          : null,
-      );
+      setFreshness(data.freshness ?? null);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(
@@ -49,6 +47,7 @@ export function SearchPage() {
   return (
     <section className="panel">
       <h2>Search trains</h2>
+      <AdvisoryBanner />
       <p className="muted">Fixture-friendly defaults (SAB → SAA, 2026-04-01). Sign in on Home first.</p>
       <form className="form-grid" onSubmit={(e) => void onSubmit(e)}>
         <label className="field">
@@ -83,7 +82,7 @@ export function SearchPage() {
         </div>
       </form>
       {error ? <p className="error">{error}</p> : null}
-      {freshnessNote ? <p className="muted">{freshnessNote}</p> : null}
+      {freshness ? <FreshnessLabel freshness={freshness} context="Search results" /> : null}
       {items.length > 0 ? (
         <ul className="result-list">
           {items.map((run) => (
