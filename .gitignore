@@ -20,3 +20,5 @@ load-tests/results/*
 experiment/calibration/pilots/*.json
 experiment/campaigns/*
 !experiment/campaigns/.gitkeep
+experiment/analysis/output/*
+!experiment/analysis/output/.gitkeep
