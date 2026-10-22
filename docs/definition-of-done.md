@@ -60,4 +60,4 @@
 - [ ] Diagrams match service names and flows.
 - [ ] API specification validates.
 - [ ] ADRs capture material decisions.
-- [ ] A second contributor completes a clean reproducibility walkthrough.
+- [ ] A second contributor completes a clean reproducibility walkthrough ([runbook](runbooks/reproducibility-walkthrough.md), [notes template](milestones/reproducibility-walkthrough-notes.md)).
