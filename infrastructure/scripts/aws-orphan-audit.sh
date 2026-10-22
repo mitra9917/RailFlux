@@ -62,4 +62,9 @@ fi
 
 export RAILFLUX_APP_REGION
 export RAILFLUX_EDGE_REGION
-exec node "${ROOT}/infrastructure/scripts/aws-orphan-audit.mjs" "${ARGS[@]}"
+# macOS bash 3.2 + set -u: "${ARGS[@]}" is unbound when ARGS is empty.
+if ((${#ARGS[@]} > 0)); then
+  exec node "${ROOT}/infrastructure/scripts/aws-orphan-audit.mjs" "${ARGS[@]}"
+else
+  exec node "${ROOT}/infrastructure/scripts/aws-orphan-audit.mjs"
+fi
