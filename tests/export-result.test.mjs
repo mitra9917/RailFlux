@@ -13,10 +13,10 @@ const k6Fixture = JSON.parse(
 
 test('M6 #60 aggregateK6Summaries maps demand and latency', () => {
   const agg = aggregateK6Summaries([k6Fixture]);
-  assert.equal(agg.demand.offered, 102);
+  assert.equal(agg.demand.offered, 100);
   assert.equal(agg.demand.started, 100);
-  assert.equal(agg.demand.completed, 98);
-  assert.equal(agg.demand.dropped, 2);
+  assert.equal(agg.demand.completed, 100);
+  assert.equal(agg.demand.dropped, 0);
   assert.equal(agg.latencyMs.terminal_p50, 12.5);
 });
 

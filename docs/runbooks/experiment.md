@@ -42,7 +42,7 @@ Deploy (step 3) and teardown (step 15) remain manual/AWS runbooks.
 3. Apply cold/warm cache procedure.
 4. Set fixed capacity or declared autoscaling policy.
 5. Verify health and dependency readiness.
-6. Verify generator CPU/network/time and preallocated VUs.
+6. Verify generator preflight ([generator-preflight.md](./generator-preflight.md)): `npm run load:preflight`.
 7. Start unique `run_id` telemetry.
 
 ## Execute
