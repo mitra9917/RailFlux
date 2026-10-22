@@ -18,7 +18,7 @@ Scope tags: **[Both]**, **[Baseline]**, or **[Optimized]** identify applicable d
 ## Performance tests
 
 - **[Both] PT-001 Smoke:** 1–5 RPS, validates scripts and telemetry. Command: `npm run load:pt001` ([runbook](../docs/runbooks/pt-001-smoke.md)).
-- **[Baseline] PT-002 Calibration:** stepped open load finds baseline SLO capacity.
+- **[Baseline] PT-002 Calibration:** stepped open load finds baseline SLO capacity. `npm run load:pt002` ([runbook](../docs/runbooks/pt-002-calibration.md)).
 - **[Both] PT-003 Release burst:** instantaneous jump followed by 90-second peak.
 - **[Both] PT-004 Progressive load:** 50%, 80%, and 110% of calibrated capacity.
 - **[Both] PT-005 Mixed traffic:** 70/20/10 search/availability/booking. `npm run load:manifest -- --scenario pt005` ([runbook](../docs/runbooks/load-from-manifest.md)).

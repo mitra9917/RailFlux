@@ -17,3 +17,4 @@ experiment/runs/*.json
 !experiment/runs/.gitkeep
 load-tests/results/*
 !load-tests/results/.gitkeep
+experiment/calibration/pilots/*.json
