@@ -49,6 +49,7 @@
 - [PT-002 calibration](runbooks/pt-002-calibration.md)
 - [Principal paired campaign](runbooks/principal-campaign.md)
 - [Failure test campaign](runbooks/failure-campaign.md)
+- [Paired bootstrap analysis](runbooks/paired-analysis.md)
 - [PT-005 / PT-006 from manifest](runbooks/load-from-manifest.md)
 
 ## Experiment
