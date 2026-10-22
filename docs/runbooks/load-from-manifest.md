@@ -7,7 +7,7 @@ PT-005 (70/20/10 search/availability/booking) and PT-006 (contention-heavy booki
 | `experiment.load_level` | Arrival rate: `L80` → 8 iter/s (`L` value ÷ 10, clamped 1–50) |
 | `experiment.duration_seconds` | k6 scenario duration |
 | `experiment.inventory_profile` | `contention` → default `--scenario both`; else PT-005 only |
-| `run_id` | `X-Run-Id` prefix for telemetry |
+| `run_id` | Manifest `run_id`; k6 uses `run_id-PT-005` unless `LOAD_K6_RUN_ID` is set (experiment controller sets it for shared DB namespace) |
 
 ## Commands
 

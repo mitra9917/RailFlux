@@ -85,7 +85,8 @@ fi
 run_k6() {
   local test_id="$1"
   local script="$2"
-  local run_id="${LOAD_RUN_ID}-${test_id}"
+  # Experiment controller sets LOAD_K6_RUN_ID so PT-005/PT-006 share one DB telemetry namespace.
+  local run_id="${LOAD_K6_RUN_ID:-${LOAD_RUN_ID}-${test_id}}"
 
   local summary="${RESULTS}/${test_id}-${LOAD_RUN_ID}-summary.json"
   local raw="${RESULTS}/${test_id}-${LOAD_RUN_ID}-raw.ndjson"

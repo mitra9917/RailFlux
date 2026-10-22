@@ -1,5 +1,21 @@
 # Experiment Runbook
 
+## Single entrypoint (local)
+
+The experiment controller runs protocol steps **4–14** for local stacks (fixture verify → reset → health → k6 → correctness → export):
+
+```bash
+export SYNTHETIC_JWT_SECRET='dev-only-change-me'
+# Compose MySQL is on host port 3307 (defaults in database/scripts/common-env.sh).
+export MYSQL_PORT=3307
+
+npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --scenario both
+```
+
+Options: `--workload pt001|manifest`, `--dry-run`, `--skip-reset`, `--skip-load`, `--skip-correctness`, `--base-url`. Output: `experiment/runs/<run_id>.json` (run index linking k6 artifacts and correctness). Full `result.schema.json` assembly is M6-P4.
+
+Deploy (step 3), pair randomization (step 2), and teardown (step 15) remain manual/AWS runbooks.
+
 ## Before a pair
 
 - Freeze application/image/IaC revisions.
