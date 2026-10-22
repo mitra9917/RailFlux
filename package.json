@@ -93,7 +93,8 @@
     "aws:gate:m5": "./infrastructure/scripts/aws-m5-gate.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
-    "db:bootstrap": "npm run db:up && npm run db:load"
+    "db:bootstrap": "npm run db:up && npm run db:load",
+    "db:reset": "./database/scripts/reset.sh"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

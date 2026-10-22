@@ -12,11 +12,6 @@ if [[ -z "$fixture_id" ]]; then
   exit 1
 fi
 
-if ! command -v mysql >/dev/null 2>&1; then
-  echo "mysql client not found" >&2
-  exit 1
-fi
-
 echo "reset experiment state for fixture ${fixture_id} on ${MYSQL_DATABASE}"
 
 mysql_exec <<SQL

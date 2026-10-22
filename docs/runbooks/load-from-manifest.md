@@ -24,7 +24,13 @@ npm run load:manifest -- --manifest experiment/load-pt-local.example.yaml --scen
 npm run load:manifest -- --manifest experiment/my-run.yaml --scenario pt005 --rate 5 --duration 60s
 ```
 
-**Before booking-heavy runs:** reset experiment DB state per [experiment runbook](experiment.md) (`database/scripts/reset.sh`) so inventory is not already exhausted.
+**Before booking-heavy runs:** reset experiment DB state so inventory is not already exhausted:
+
+```bash
+npm run db:reset
+```
+
+Uses the host `mysql` client when installed; otherwise runs SQL via the Compose `mysql` container (`database/scripts/mysql-cli.sh`). Requires MySQL up (`npm run db:up` or Compose stack running).
 
 ## Artifacts
 

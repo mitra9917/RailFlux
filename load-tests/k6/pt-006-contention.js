@@ -5,7 +5,7 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
-import { TC001, authHeaders } from './lib/railflux-data.js';
+import { TC001, authHeaders, bookingPostOptions, fixtureUserId } from './lib/railflux-data.js';
 
 const baseUrl = __ENV.BASE_URL || 'http://127.0.0.1:3000';
 const token = __ENV.K6_BEARER_TOKEN || '';
@@ -48,15 +48,16 @@ export default function pt006Contention() {
     return;
   }
   const body = JSON.stringify({
-    userId: TC001.userId,
+    userId: fixtureUserId(),
     inventoryId: TC001.inventory3aId,
     passengers: [{ syntheticName: 'PT006 Pax', age: 30 }],
     paymentToken: 'stub-payment-token',
   });
-  const res = http.post(`${baseUrl}/v1/bookings`, body, {
-    headers: { ...hdrs, 'Idempotency-Key': uuidv4() },
-    tags: { op: 'booking' },
-  });
+  const res = http.post(
+    `${baseUrl}/v1/bookings`,
+    body,
+    bookingPostOptions({ ...hdrs, 'Idempotency-Key': uuidv4() }),
+  );
   check(res, {
     'booking outcome': (r) => [200, 201, 409, 422, 429].includes(r.status),
   });

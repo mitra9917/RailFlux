@@ -100,6 +100,7 @@ run_k6() {
     --env "BASE_URL=${BASE_URL}" \
     --env "RUN_ID=${run_id}" \
     --env "K6_BEARER_TOKEN=${K6_BEARER_TOKEN}" \
+    --env "K6_USER_ID=${K6_USER_ID}" \
     --env "LOAD_RATE=${LOAD_RATE}" \
     --env "LOAD_DURATION=${LOAD_DURATION}" \
     --summary-export "${summary}" \
@@ -121,10 +122,8 @@ export BASELINE_HEALTH_URL="${BASE_URL}"
 echo "==> Load preflight manifest=${MANIFEST} scenario=${SCENARIO}"
 if (( DRY_RUN == 0 )); then
   "${ROOT}/scripts/check-baseline-health.sh"
-  SECRET="${SYNTHETIC_JWT_SECRET:-dev-only-change-me}"
-  export SYNTHETIC_JWT_SECRET="${SECRET}"
-  K6_BEARER_TOKEN="$(node "${ROOT}/scripts/mint-synthetic-jwt.mjs" 11111111-1111-4111-8111-111111111111 browser)"
-  export K6_BEARER_TOKEN
+  # shellcheck source=resolve-k6-auth.sh
+  source "${ROOT}/load-tests/scripts/resolve-k6-auth.sh"
 fi
 
 mkdir -p "${RESULTS}"
