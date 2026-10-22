@@ -51,6 +51,7 @@
 - [Failure test campaign](runbooks/failure-campaign.md)
 - [Paired bootstrap analysis](runbooks/paired-analysis.md)
 - [Results dashboard](runbooks/results-dashboard.md)
+- [Experiment report generator](runbooks/experiment-report.md)
 - [PT-005 / PT-006 from manifest](runbooks/load-from-manifest.md)
 
 ## Experiment
