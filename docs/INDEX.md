@@ -12,6 +12,7 @@
 - [M3 acceptance gate](milestones/M3-acceptance.md)
 - [M4 acceptance gate](milestones/M4-acceptance.md)
 - [M7 acceptance gate](milestones/M7-acceptance.md)
+- [M8 acceptance (in progress)](milestones/M8-acceptance.md)
 - [Definition of Done](definition-of-done.md)
 - [Requirements traceability](requirements-traceability.md)
 
