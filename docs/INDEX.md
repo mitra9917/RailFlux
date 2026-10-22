@@ -44,6 +44,7 @@
 - [Experiment runbook](runbooks/experiment.md)
 - [Teardown runbook](runbooks/teardown.md)
 - [Security smoke runbook](runbooks/security-smoke.md)
+- [M5 acceptance gate](runbooks/m5-gate.md)
 
 ## Experiment
 

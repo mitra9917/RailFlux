@@ -25,6 +25,7 @@ AWS and Compose helpers under `infrastructure/`. Compose scripts live in repo-ro
 | `aws-security-st004-smoke.sh` | ST-004 ALB origin header restriction |
 | `aws-security-st005-smoke.sh` / `aws-security-st005.mjs` | ST-005 IAM negative simulation |
 | `aws-security-smoke.sh` | ST-004 + ST-005 with JSON evidence (M5 #54) |
+| `aws-m5-gate.sh` | M5 AWS acceptance — baseline then optimized deploy/teardown (M5 #55) |
 | `aws-package.sh` | Package nested templates to S3 (for future nested-stack deploys) |
 
 Default application region: **`ap-south-1`**. CloudFront WAF edge stack: **`us-east-1`**.

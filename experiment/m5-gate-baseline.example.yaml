@@ -1,0 +1,16 @@
+# Copy for M5 AWS gate baseline phase (docs/runbooks/m5-gate.md).
+schema_version: "1.0"
+run_id: m5-gate-baseline-001
+pair_id: gate-only
+pair_order: AB
+architecture: baseline
+deployment:
+  session_name: m5-gate-baseline
+  owner: railflux-operator
+  application_region: ap-south-1
+experiment:
+  waf_mode: "off"
+cost:
+  estimated_hourly_usd: "1.20"
+  maximum_session_hours: "2"
+  expires_at: 2026-12-31T23:59:59Z
