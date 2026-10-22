@@ -14,6 +14,16 @@ function pick(text, pattern) {
   return m?.[1]?.trim().replace(/^["']|["']$/g, '') ?? '';
 }
 
+function yamlSection(text, key) {
+  const marker = `${key}:`;
+  const start = text.indexOf(marker);
+  if (start < 0) return '';
+  const rest = text.slice(start + marker.length);
+  const match = rest.match(/\n([a-z_]+):/);
+  if (!match || match.index == null) return rest;
+  return rest.slice(0, match.index);
+}
+
 export function parseControllerManifestText(text) {
   const base = parseLoadManifestText(text);
   const pairId = pick(text, /^pair_id:\s*(\S+)/m);
@@ -24,6 +34,11 @@ export function parseControllerManifestText(text) {
   const legitimate = Number(pick(text, /^    legitimate:\s*([\d.]+)/m) || 1);
   const botLike = Number(pick(text, /^    bot_like:\s*([\d.]+)/m) || 0);
   const requestSeed = Number(base.requestSeed || pick(text, /^  request_seed:\s*(\d+)/m) || 0);
+  const failureBlock = yamlSection(text, 'failure_injection');
+  const failureEnabled = /^\s*enabled:\s*true/m.test(failureBlock);
+  const failureType = pick(failureBlock, /^\s*type:\s*(\S+)/m) || 'none';
+  const failureOffset = Number(pick(failureBlock, /^\s*offset_seconds:\s*(\d+)/m) || 0);
+  const failureTestId = pick(failureBlock, /^\s*failure_test_id:\s*(\S+)/m) || 'none';
 
   return {
     ...base,
@@ -34,6 +49,12 @@ export function parseControllerManifestText(text) {
     fixtureSha256,
     requestSeed,
     cohortMix: { legitimate, bot_like: botLike },
+    failureInjection: {
+      enabled: failureEnabled,
+      type: failureType,
+      offset_seconds: failureOffset,
+      failure_test_id: failureTestId,
+    },
   };
 }
 

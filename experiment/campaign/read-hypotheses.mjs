@@ -47,6 +47,7 @@ export function arrivalRateForLoadLevel(loadLevel, calibration, fallback = 8) {
     L50: 'pct_50',
     L80: 'pct_80',
     L110: 'pct_110',
+    FAILURE: 'pct_80',
   };
   const key = map[level];
   const rate = key ? calibration?.progressive_load_rps?.[key] : 0;
