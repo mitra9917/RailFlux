@@ -2,7 +2,8 @@
 # Shared MySQL connection defaults for database scripts.
 
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
-MYSQL_PORT="${MYSQL_PORT:-3306}"
+# Compose publishes MySQL on host 3307 (see infrastructure/compose/README.md). CI sets MYSQL_PORT=3306.
+MYSQL_PORT="${MYSQL_PORT:-3307}"
 MYSQL_USER="${MYSQL_USER:-railflux}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-railflux}"
 MYSQL_DATABASE="${MYSQL_DATABASE:-railflux}"

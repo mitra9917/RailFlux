@@ -1,11 +1,38 @@
 # Experiment controller
 
-CLI and automation for protocol steps: reset, seed, run manifests, k6 invocation, artifact export, correctness SQL (M6).
+Single entrypoint for **local** experiment runs (M6 #58): fixture verify, reset/seed, health, k6, correctness, and run record export under `experiment/runs/`.
 
-Design docs and schemas live alongside this folder:
+Design docs and schemas:
 
 - `../protocol.md`, `../test-catalog.md`
 - `../run-manifest.template.yaml`, `../result.schema.json`
 - `../correctness.sql`
 
-Run outputs: `../runs/` (JSON per run, gitignored).
+## Command
+
+```bash
+export SYNTHETIC_JWT_SECRET='dev-only-change-me'
+
+# Full local run (PT-005 + PT-006 from manifest)
+npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --scenario both
+
+# PT-001 smoke path
+npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --workload pt001
+
+# Plan without side effects
+npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --dry-run
+```
+
+See [Experiment runbook](../../docs/runbooks/experiment.md) for protocol context. AWS deploy, pair randomization (M6-P3), and full `result.schema.json` export (M6-P4) are separate steps.
+
+## Scripts
+
+| File | Role |
+| --- | --- |
+| `run.sh` | Orchestrates protocol steps 4–14 locally |
+| `parse-run-manifest.mjs` | Manifest + `run_id` resolution |
+| `write-run-input.mjs` | Assembles finalize input |
+| `finalize-run.mjs` | Writes `experiment/runs/<run_id>.json` |
+| `export-run-record.mjs` | Run index record builder |
+
+Run outputs: `../runs/*.json` (gitignored except `.gitkeep`).

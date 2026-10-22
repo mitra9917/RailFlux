@@ -46,6 +46,7 @@ test('M6 #57 manifest runner documents scenarios', () => {
   assert.match(runner, /PT-006/);
   assert.match(runner, /load-manifest.mjs/);
   assert.match(runner, /resolve-k6-auth/);
+  assert.match(runner, /LOAD_K6_RUN_ID/);
   const auth = readFileSync(join(root, 'load-tests/scripts/resolve-k6-auth.sh'), 'utf8');
   assert.match(auth, /SELECT id FROM users/);
 });
