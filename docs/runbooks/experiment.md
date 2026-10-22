@@ -12,7 +12,14 @@ export MYSQL_PORT=3307
 npm run experiment:run -- --manifest experiment/load-pt-local.example.yaml --scenario both
 ```
 
-Options: `--workload pt001|manifest`, `--dry-run`, `--skip-reset`, `--skip-load`, `--skip-correctness`, `--base-url`. Output: `experiment/runs/<run_id>.json` (run index linking k6 artifacts and correctness). Full `result.schema.json` assembly is M6-P4.
+Options: `--workload pt001|manifest`, `--dry-run`, `--skip-reset`, `--skip-load`, `--skip-correctness`, `--base-url`.
+
+Outputs per run:
+
+- `experiment/runs/<run_id>.json` — run index (protocol steps, k6 links, correctness)
+- `experiment/runs/<run_id>.result.json` — **`result.schema.json`** document (k6 demand/latency, DB booking counts, artifact paths)
+
+Re-export result only: `npm run experiment:export-result -- --from-run-index experiment/runs/<run_id>.json`
 
 **Pair randomization (step 2):** [run manifest generator](./run-manifest-generator.md) — `npm run experiment:generate-manifest`.
 

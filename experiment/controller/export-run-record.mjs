@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Export experiment run index JSON to experiment/runs/ (M6 #58).
- * Full result.schema.json assembly is M6-P4; this links manifest, k6, and correctness.
+ * Pairs with `<run_id>.result.json` from export-result.mjs (M6 #60).
  */
 import fs from 'node:fs';
 import path from 'node:path';

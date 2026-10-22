@@ -27,7 +27,9 @@ See [Experiment runbook](../../docs/runbooks/experiment.md) for protocol context
 
 **Pair manifests (M6 #59):** `npm run experiment:generate-manifest` — [runbook](../../docs/runbooks/run-manifest-generator.md).
 
-AWS deploy and full `result.schema.json` export (M6-P4) are separate steps.
+**Result export (M6 #60):** `experiment/runs/<run_id>.result.json` is written automatically by `experiment:run`; re-export with `npm run experiment:export-result`.
+
+AWS deploy remains a separate runbook step.
 
 ## Scripts
 
