@@ -77,3 +77,4 @@
 - [Run manifest generator](runbooks/run-manifest-generator.md)
 - [Experiment result export](runbooks/export-result.md)
 - [Load generator preflight](runbooks/generator-preflight.md)
+- [M6 acceptance gate](runbooks/m6-gate.md)

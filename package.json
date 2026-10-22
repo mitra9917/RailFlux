@@ -62,6 +62,8 @@
     "gate:m3": "./scripts/m3-gate.sh",
     "gate:m4": "./scripts/m4-gate.sh",
     "gate:m5": "./scripts/m5-gate.sh",
+    "gate:m6": "./scripts/m6-gate.sh",
+    "test:m6-gate": "node --test tests/load-pt001.test.mjs tests/load-manifest.test.mjs tests/experiment-controller.test.mjs tests/run-manifest-generator.test.mjs tests/export-result.test.mjs tests/generator-preflight.test.mjs tests/m6-gate.test.mjs",
     "test:m5-gate": "node --test tests/cfn-*.test.mjs tests/m5-gate.test.mjs",
     "cfn:validate": "./infrastructure/scripts/cfn-validate.sh",
     "aws:deploy:baseline": "./infrastructure/scripts/aws-deploy.sh aws-baseline",
