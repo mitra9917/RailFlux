@@ -65,11 +65,9 @@ export function ComparePage() {
     try {
       const bKey = generateIdempotencyKey();
       const oKey = generateIdempotencyKey();
-      const [b, o] = await Promise.all([
-        probeArchitectureBooking('baseline', BASELINE_PREFIX, token, bKey),
-        probeArchitectureBooking('optimized', OPTIMIZED_PREFIX, token, oKey),
-      ]);
+      const b = await probeArchitectureBooking('baseline', BASELINE_PREFIX, token, bKey);
       setBaselineProbe(b);
+      const o = await probeArchitectureBooking('optimized', OPTIMIZED_PREFIX, token, oKey);
       setOptimizedProbe(o);
       if (!b.ok && !o.ok) {
         setProbeError('Both probes failed — start dual stack (see instructions below).');

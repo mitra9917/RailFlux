@@ -72,23 +72,38 @@ export async function probeArchitectureBooking(
       passengers: [{ syntheticName: 'Synthetic Pax', age: 30 }],
       paymentToken: 'stub-payment-token',
     };
-    const tBook = performance.now();
-    const bookRes = await fetch(url(apiPrefix, '/v1/bookings'), {
-      method: 'POST',
-      headers: {
-        ...auth,
-        'content-type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
-      },
-      body: JSON.stringify(bookBody),
-    });
-    bookingMs = performance.now() - tBook;
-    const bookJson = await bookRes.json();
-    if (bookRes.status === 422 && bookJson.errorCode === 'PAYMENT_FAILED') {
-      throw new Error('payment stub failed — retry probe (new idempotency key)');
+    let bookJson: {
+      status?: string;
+      simulatedPnr?: string;
+      errorCode?: string;
+    } = {};
+    let bookRes: Response | null = null;
+    let attemptKey = idempotencyKey;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const tBook = performance.now();
+      bookRes = await fetch(url(apiPrefix, '/v1/bookings'), {
+        method: 'POST',
+        headers: {
+          ...auth,
+          'content-type': 'application/json',
+          'Idempotency-Key': attemptKey,
+        },
+        body: JSON.stringify(bookBody),
+      });
+      bookingMs += performance.now() - tBook;
+      bookJson = await bookRes.json();
+      if (bookRes.status === 201 && bookJson.status === 'CONFIRMED') break;
+      if (bookRes.status === 422 && bookJson.errorCode === 'PAYMENT_FAILED') {
+        attemptKey = `${idempotencyKey}-retry-${attempt + 1}`;
+        continue;
+      }
+      break;
     }
-    if (!bookRes.ok || bookJson.status !== 'CONFIRMED') {
-      throw new Error(`booking ${bookRes.status} ${bookJson.errorCode ?? bookJson.status ?? ''}`);
+
+    if (!bookRes?.ok || bookJson.status !== 'CONFIRMED') {
+      throw new Error(
+        `booking ${bookRes?.status ?? '?'} ${bookJson.errorCode ?? bookJson.status ?? ''}`.trim(),
+      );
     }
 
     return {
