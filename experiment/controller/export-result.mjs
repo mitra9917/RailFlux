@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadMetricsFromK6Artifacts } from './k6-summary-metrics.mjs';
 import { createMysqlPoolFromEnv, queryBookingStats } from './query-booking-stats.mjs';
+import { buildRecoveryMetrics } from './recovery-metrics.mjs';
 import { validateExperimentResult } from './validate-result-schema.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -102,6 +103,20 @@ export function buildExperimentResult(input, options = {}) {
     };
   }
 
+  const failure = manifest.failureInjection;
+  const failureRun =
+    loadLevel === 'failure' || (failure?.enabled && failure?.type && failure.type !== 'none');
+  if (failureRun) {
+    result.recovery = buildRecoveryMetrics({
+      failureTestId: failure?.failure_test_id && failure.failure_test_id !== 'none'
+        ? failure.failure_test_id
+        : 'FT-UNKNOWN',
+      failureInjectionType: failure?.type ?? 'none',
+      injectionOffsetSeconds: Number(failure?.offset_seconds ?? 0),
+      k6Artifacts: input.k6Artifacts,
+    });
+  }
+
   return result;
 }
 
@@ -153,6 +168,7 @@ function loadInputFromRunIndex(indexPath) {
         cacheCondition: record.experiment?.cache_condition,
         requestSeed: record.experiment?.request_seed,
         cohortMix: record.experiment?.cohort_mix,
+        failureInjection: record.experiment?.failure_injection,
       },
       fixtureVerification: record.fixture?.verification,
       k6Artifacts: record.k6_artifacts,

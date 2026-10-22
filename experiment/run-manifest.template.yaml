@@ -44,6 +44,8 @@ cost:
 failure_injection:
   enabled: false
   type: none
+  offset_seconds: 0
+  failure_test_id: none
 validity_gates:
   fixture_checksum_passed: false
   health_passed: false

@@ -48,6 +48,7 @@ export function buildRunRecord(input) {
       duration_seconds: manifest?.durationSeconds ?? null,
       request_seed: manifest?.requestSeed ?? null,
       cohort_mix: manifest?.cohortMix || null,
+      failure_injection: manifest?.failureInjection || null,
     },
     protocol_steps: protocolSteps,
     k6_artifacts: k6Artifacts,

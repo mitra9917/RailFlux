@@ -118,6 +118,8 @@ export function renderRunManifestYaml(manifest) {
     'failure_injection:',
     `  enabled: ${m.failure_injection.enabled}`,
     `  type: ${m.failure_injection.type}`,
+    `  offset_seconds: ${yamlNumber(m.failure_injection.offset_seconds ?? 0)}`,
+    `  failure_test_id: ${yamlString(m.failure_injection.failure_test_id ?? 'none')}`,
     'validity_gates:',
     `  fixture_checksum_passed: ${m.validity_gates.fixture_checksum_passed}`,
     `  health_passed: ${m.validity_gates.health_passed}`,
@@ -164,6 +166,7 @@ export function buildRunManifest(input) {
     artifactsPrefix = 'TO_SET',
     resources = {},
     cost = {},
+    failureInjection = { enabled: false, type: 'none', offset_seconds: 0, failure_test_id: 'none' },
   } = input;
 
   const waf = wafMode === 'on' ? 'on' : 'off';
@@ -234,7 +237,12 @@ export function buildRunManifest(input) {
       maximum_session_hours: cost.maximum_session_hours ?? 'TO_SET',
       expires_at: cost.expires_at ?? 'TO_SET',
     },
-    failure_injection: { enabled: false, type: 'none' },
+    failure_injection: {
+      enabled: Boolean(failureInjection.enabled),
+      type: failureInjection.type ?? 'none',
+      offset_seconds: Number(failureInjection.offset_seconds ?? 0),
+      failure_test_id: failureInjection.failure_test_id ?? 'none',
+    },
     validity_gates: {
       fixture_checksum_passed: false,
       health_passed: false,

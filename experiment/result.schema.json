@@ -91,9 +91,39 @@
         "traces": {"type": "string"},
         "reconciliation": {"type": "string"}
       }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_test_id",
+        "failure_injection_type",
+        "injection_offset_seconds",
+        "recovery_time_seconds",
+        "slo_restored",
+        "peak_technical_error_rate"
+      ],
+      "properties": {
+        "failure_test_id": {"type": "string", "minLength": 1},
+        "failure_injection_type": {"type": "string", "minLength": 1},
+        "injection_offset_seconds": {"type": "number", "minimum": 0},
+        "recovery_time_seconds": {"type": ["number", "null"], "minimum": 0},
+        "slo_restored": {"type": "boolean"},
+        "peak_technical_error_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "pre_fault_error_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      }
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": {"load_level": {"const": "failure"}},
+        "required": ["load_level"]
+      },
+      "then": {
+        "required": ["recovery"]
+      }
+    },
     {
       "if": {
         "properties": {"valid": {"const": true}},
