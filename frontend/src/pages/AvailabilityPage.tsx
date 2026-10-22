@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { getAvailability, type AvailabilityParams } from '../api/search';
 import type { Availability, TravelClass } from '@railflux/shared/api-types';
+import { TC001_INVENTORY_3A_ID } from '../fixtures/tc001-demo';
 
 const CLASSES: TravelClass[] = ['SL', '3A', '2A'];
 
@@ -106,6 +107,16 @@ export function AvailabilityPage() {
                 Cache {availability.freshness.cacheStatus} · observed{' '}
                 {new Date(availability.freshness.observedAt).toLocaleString()}
               </p>
+              {travelClass === '3A' ? (
+                <Link
+                  className="button-link"
+                  to={`/book?inventoryId=${encodeURIComponent(TC001_INVENTORY_3A_ID)}`}
+                >
+                  Book 3A Tatkal (TC-001 inventory)
+                </Link>
+              ) : (
+                <p className="muted">Booking demo inventory is wired for 3A (TC-001).</p>
+              )}
             </div>
           ) : null}
         </>
