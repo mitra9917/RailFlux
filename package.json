@@ -46,6 +46,7 @@
     "run:correctness": "node database/scripts/run-correctness.mjs",
     "health:check": "./scripts/check-baseline-health.sh",
     "load:pt001": "./load-tests/scripts/run-pt001-smoke.sh",
+    "load:manifest": "./load-tests/scripts/run-load-from-manifest.sh",
     "compose:baseline": "./scripts/compose-baseline-up.sh",
     "compose:optimized": "./scripts/compose-optimized-up.sh",
     "compose:status": "./scripts/compose-status.sh",
@@ -92,7 +93,8 @@
     "aws:gate:m5": "./infrastructure/scripts/aws-m5-gate.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
-    "db:bootstrap": "npm run db:up && npm run db:load"
+    "db:bootstrap": "npm run db:up && npm run db:load",
+    "db:reset": "./database/scripts/reset.sh"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

@@ -17,3 +17,11 @@ npm run load:pt001 -- --run-id run-pt001-001 --rate 3
 ```
 
 See [docs/runbooks/pt-001-smoke.md](../docs/runbooks/pt-001-smoke.md).
+
+## PT-005 / PT-006 from run manifest (M6 #57)
+
+```bash
+npm run load:manifest -- --manifest experiment/load-pt-local.example.yaml --scenario both
+```
+
+`load_level` (e.g. `L30` → 3 RPS) and `duration_seconds` come from the manifest. See [docs/runbooks/load-from-manifest.md](../docs/runbooks/load-from-manifest.md).
