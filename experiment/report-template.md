@@ -71,4 +71,6 @@ Restate threats relevant to this campaign. Do not generalize results to real IRC
 - traces:
 - reconciliation:
 - analysis:
+- results dashboard: `experiment/dashboard/output/<campaign_id>-dashboard.html`
+- dashboard data: `experiment/dashboard/output/<campaign_id>-dashboard.json`
 - cost export:

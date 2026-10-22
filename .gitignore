@@ -22,3 +22,5 @@ experiment/campaigns/*
 !experiment/campaigns/.gitkeep
 experiment/analysis/output/*
 !experiment/analysis/output/.gitkeep
+experiment/dashboard/output/*
+!experiment/dashboard/output/.gitkeep

@@ -55,6 +55,7 @@
     "experiment:failure-campaign": "./experiment/campaign/run-failure-campaign.sh",
     "experiment:failure-campaign:smoke": "./experiment/campaign/run-failure-campaign.sh --smoke --campaign-id failure-smoke-001",
     "experiment:analyze-pairs": "./experiment/analysis/run-paired-analysis.sh",
+    "experiment:results-dashboard": "./experiment/dashboard/run-results-dashboard.sh",
     "experiment:generate-manifest": "node experiment/controller/generate-run-manifest.mjs",
     "experiment:export-result": "node experiment/controller/export-result.mjs",
     "compose:baseline": "./scripts/compose-baseline-up.sh",
