@@ -81,6 +81,8 @@
     "aws:smoke:account-budgets": "./infrastructure/scripts/aws-account-budgets-smoke.sh",
     "aws:smoke:observability": "./infrastructure/scripts/aws-observability-smoke.sh",
     "aws:teardown": "./infrastructure/scripts/aws-teardown.sh",
+    "aws:teardown:session": "./infrastructure/scripts/aws-teardown-session.sh",
+    "aws:audit:orphans": "./infrastructure/scripts/aws-orphan-audit.sh",
     "db:up": "./scripts/db-up.sh",
     "db:load": "./database/scripts/load-fixture.sh",
     "db:bootstrap": "npm run db:up && npm run db:load"

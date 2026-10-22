@@ -77,6 +77,8 @@ From repository root:
 | `npm run aws:deploy:sqs-worker` | SQS + DLQ (optimized; before IAM SQS policies) |
 | `npm run aws:smoke:sqs-worker` | Queue + worker service presence check |
 | `npm run aws:teardown` | Delete session stacks (profile + region aware) |
+| `npm run aws:teardown:session` | Full session teardown + orphan audit (dry-run default) |
+| `npm run aws:audit:orphans` | Post-smoke account audit (`ap-south-1` + `us-east-1`) |
 
 See [infrastructure/scripts/README.md](../scripts/README.md).
 
