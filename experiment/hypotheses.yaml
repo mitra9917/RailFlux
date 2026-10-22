@@ -1,5 +1,5 @@
 schema_version: "1.0"
-status: preregistered-draft
+status: frozen
 freeze_after_calibration: true
 primary_endpoint:
   name: slo_compliant_offered_booking_rate
@@ -8,6 +8,23 @@ primary_endpoint:
     technical_error_rate_max: 0.01
     dropped_arrival_rate_max: 0.001
     correctness_required: true
+calibration:
+  frozen_at: "2026-10-22T10:01:29.315Z"
+  pilot_run_id: "cal-baseline-002"
+  deployment_profile: baseline
+  test_id: PT-002
+  workload_mix:
+    search: 0.7
+    availability: 0.2
+    booking: 0.1
+  slo_capacity_offered_rps: 40
+  progressive_load_rps:
+    pct_50: 20
+    pct_80: 32
+    pct_110: 44
+  step_duration: "60s"
+  pilot_artifact: "experiment/calibration/pilots/cal-baseline-002.json"
+
 hypotheses:
   - id: H1
     statement: Optimized architecture increases SLO-compliant offered booking capacity by at least 25 percent at cost parity.

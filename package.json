@@ -46,6 +46,7 @@
     "run:correctness": "./database/scripts/run-correctness.sh",
     "health:check": "./scripts/check-baseline-health.sh",
     "load:pt001": "./load-tests/scripts/run-pt001-smoke.sh",
+    "load:pt002": "./load-tests/scripts/run-pt002-calibration.sh",
     "load:manifest": "./load-tests/scripts/run-load-from-manifest.sh",
     "load:preflight": "./load-tests/scripts/run-generator-preflight.sh",
     "experiment:run": "./experiment/controller/run.sh",

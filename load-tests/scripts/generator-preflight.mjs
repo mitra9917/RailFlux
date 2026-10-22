@@ -7,8 +7,15 @@ import os from 'os';
 import { pathToFileURL } from 'node:url';
 import { parseK6SummaryFile } from '../../experiment/controller/k6-summary-metrics.mjs';
 
+function envNumber(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export const DEFAULT_LIMITS = {
-  maxHostLoadPct: 70,
+  maxHostLoadPct: envNumber('GENERATOR_PREFLIGHT_MAX_HOST_LOAD_PCT', 70),
   maxDroppedRate: 0.001,
   maxBlockedP95Ms: 750,
   maxStartDelayMs: 2000,

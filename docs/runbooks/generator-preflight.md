@@ -20,4 +20,6 @@ npm run load:preflight -- --base-url http://127.0.0.1:3000
 node load-tests/scripts/generator-preflight.mjs k6-summary load-tests/results/PT-005-run-001-summary.json
 ```
 
-`npm run load:pt001`, `npm run load:manifest`, and `npm run experiment:run` invoke these gates automatically. Failed post-run checks exit non-zero and mark the experiment run **invalid** (`generator_preflight_failed`).
+`npm run load:pt001`, `npm run load:pt002`, `npm run load:manifest`, and `npm run experiment:run` invoke these gates automatically. Failed post-run checks exit non-zero and mark the experiment run **invalid** (`generator_preflight_failed`).
+
+Local dev only (not for confirmatory runs): raise the host gate with `GENERATOR_PREFLIGHT_MAX_HOST_LOAD_PCT=85` (default 70).
