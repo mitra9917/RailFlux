@@ -21,7 +21,12 @@ npm run build:shared
 npm run dev:frontend
 ```
 
-Open http://127.0.0.1:5173 — use **Synthetic sign-in** with a fixture UUID or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
+Open http://127.0.0.1:5173 — Vite **proxies** `/v1/*` and `/health/*` to port 3000 (no CORS setup needed).
+
+1. **Home** — synthetic sign-in, ping health  
+2. **Search** — SAB → SAA (defaults), open **Availability** on a train run  
+
+Sign in with a fixture UUID or `npm run mint:jwt -- 11111111-1111-4111-8111-111111111111 browser`.
 
 ## Build
 
@@ -43,6 +48,9 @@ Never collect real names, payment cards, or IRCTC credentials in this UI.
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_API_BASE_URL` | API prefix, default `http://127.0.0.1:3000/api` |
+| `VITE_API_BASE_URL` | Empty in dev (same-origin + proxy). Production: API origin or `/api` prefix |
+| `VITE_DEV_API_TARGET` | Vite-only proxy target (default `http://127.0.0.1:3000`) |
 | `VITE_SYNTHETIC_JWT_SECRET` | Optional dev JWT signing |
 | `VITE_SYNTHETIC_USER_ID` | Default synthetic UUID |
+
+Local API routes are **`/v1/*`**, not **`/api`** — do not open `http://127.0.0.1:3000/api` in the browser.
