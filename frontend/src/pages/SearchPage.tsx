@@ -4,6 +4,8 @@ import { ApiError } from '@/api/client';
 import { searchTrains } from '@/api/search';
 import { loadStoredToken } from '@/auth/synthetic-auth';
 import type { Freshness, TrainRun } from '@railflux/shared/api-types';
+import { AdvisoryBanner } from '@/components/AdvisoryBanner';
+import { FreshnessLabel } from '@/components/FreshnessLabel';
 import { PageShell } from '@/components/app/PageShell';
 import { SyntheticAuthPanel } from '@/components/SyntheticAuthPanel';
 import { Button } from '@/components/ui/button';
@@ -84,6 +86,8 @@ export function SearchPage() {
       title="Trains"
       lead={from || to ? `${from || 'any'} → ${to || 'any'} · ${date}` : `All trains · ${date}`}
     >
+      <AdvisoryBanner />
+
       <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
         <Input
           aria-label="From"
@@ -156,9 +160,7 @@ export function SearchPage() {
         ) : null}
       </div>
 
-      {freshness ? (
-        <p className="text-[12px] text-muted-foreground">Advisory listing · cache {freshness.cacheStatus.toLowerCase()}</p>
-      ) : null}
+      {freshness ? <FreshnessLabel freshness={freshness} context="Search results" /> : null}
     </PageShell>
   );
 }

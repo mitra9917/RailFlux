@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getAvailability } from '@/api/search';
 import type { Availability, TravelClass } from '@railflux/shared/api-types';
+import { AdvisoryBanner } from '@/components/AdvisoryBanner';
+import { FreshnessLabel } from '@/components/FreshnessLabel';
 import { PageShell } from '@/components/app/PageShell';
 import { patchJourneyTrace } from '@/lib/journey-trace';
 import { CLASS_LABEL } from '@/lib/travel-copy';
@@ -62,6 +64,10 @@ export function AvailabilityPage() {
     };
   }, [trainRunId, trainNo, trainName, from, to, date]);
 
+  const freshnessRow = Object.values(rows).find(
+    (row): row is Availability => Boolean(row) && row !== 'error',
+  );
+
   const bookHref = (travelClass: TravelClass, inventoryId: string) => {
     const q = new URLSearchParams({
       inventoryId,
@@ -82,6 +88,7 @@ export function AvailabilityPage() {
       title={trainName || 'Availability'}
       lead={[trainNo, from && to ? `${from} → ${to}` : '', date].filter(Boolean).join(' · ')}
     >
+      <AdvisoryBanner />
       {!trainRunId ? (
         <p className="text-sm text-muted-foreground">
           Choose a train from <Link to="/search">Search</Link>.
@@ -99,7 +106,7 @@ export function AvailabilityPage() {
                 <p className="mt-8 text-3xl font-semibold tracking-tight">
                   {loading ? '—' : seats == null ? '—' : seats}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">seats shown</p>
+                <p className="mt-1 text-sm text-muted-foreground">seats shown (advisory)</p>
                 {bookable ? (
                   <Link
                     to={bookHref(code, row.inventoryId)}
@@ -117,9 +124,9 @@ export function AvailabilityPage() {
           })}
         </div>
       )}
-      <p className="text-[12px] text-muted-foreground">
-        Seat counts are advisory. Allocation happens only when the booking commits.
-      </p>
+      {freshnessRow ? (
+        <FreshnessLabel freshness={freshnessRow.freshness} context="Displayed availability" />
+      ) : null}
     </PageShell>
   );
 }
