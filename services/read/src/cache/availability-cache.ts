@@ -17,6 +17,7 @@ type CachedPayload = {
   trainRunId: string;
   class: Availability['class'];
   quota: Availability['quota'];
+  inventoryId: string;
   displayedSeats: number;
   observedAt: string;
 };
@@ -38,6 +39,7 @@ function withFreshness(
     trainRunId: payload.trainRunId,
     class: payload.class,
     quota: payload.quota,
+    inventoryId: payload.inventoryId,
     displayedSeats: payload.displayedSeats,
     freshness: {
       observedAt: payload.observedAt,
@@ -86,6 +88,7 @@ async function loadAvailabilityPayload(
     trainRunId: fromDb.trainRunId,
     class: fromDb.class,
     quota: fromDb.quota,
+    inventoryId: fromDb.inventoryId,
     displayedSeats: fromDb.displayedSeats,
     observedAt,
   };
@@ -134,7 +137,11 @@ export function createRedisAvailabilityReader(
         const cached = await redisGet(redis, key);
         if (cached) {
           const payload = JSON.parse(cached) as CachedPayload;
-          return withFreshness(payload, 'HIT');
+          if (!payload.inventoryId) {
+            // Pre-inventoryId cache entries are unusable for booking.
+          } else {
+            return withFreshness(payload, 'HIT');
+          }
         }
       } catch {
         return getAvailability(pool, query);

@@ -31,6 +31,7 @@ export type Availability = {
   trainRunId: string;
   class: TravelClass;
   quota: Quota;
+  inventoryId: string;
   displayedSeats: number;
   freshness: Freshness;
 };

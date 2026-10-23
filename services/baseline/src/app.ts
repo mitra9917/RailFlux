@@ -3,6 +3,7 @@ import { buildServiceRootBody } from '@railflux/shared';
 import type { ServiceConfig } from './config.js';
 import type { DbPool } from './db.js';
 import { createRequestLoggingMiddleware } from './middleware/request-logging.js';
+import { createCompareProbeCalibrationMiddleware } from './middleware/compare-probe-calibration.js';
 import { createSyntheticJwtMiddleware } from './middleware/synthetic-jwt.js';
 import { createHealthRouter } from './routes/health.js';
 import { createV1Router } from './routes/v1.js';
@@ -24,6 +25,7 @@ export function createApp(config: ServiceConfig, pool: DbPool) {
   app.use(
     '/v1',
     createSyntheticJwtMiddleware(config.syntheticJwtSecret),
+    createCompareProbeCalibrationMiddleware(),
     createV1Router(pool),
   );
 

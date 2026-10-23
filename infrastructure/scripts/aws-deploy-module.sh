@@ -555,9 +555,7 @@ case "${MODULE}" in
 esac
 
 TAG_ARGS=()
-while IFS= read -r tag; do
-  TAG_ARGS+=(--tags "${tag}")
-done < <(railflux_cfn_tags "${RUN_ID}" "${OWNER}" "${EXPIRES_AT}" "${TAG_PROFILE}")
+railflux_cfn_deploy_tags_argv TAG_ARGS "${RUN_ID}" "${OWNER}" "${EXPIRES_AT}" "${TAG_PROFILE}"
 
 echo "==> Deploy module=${MODULE} stack=${STACK} region=${REGION}"
 
@@ -566,7 +564,7 @@ if [[ "${MODULE}" == iam ]]; then
   CAPS=(--capabilities CAPABILITY_NAMED_IAM)
 fi
 
-aws cloudformation deploy \
+railflux_cfn_deploy_with_progress "${STACK}" "${REGION}" \
   --template-file "${TEMPLATE}" \
   --stack-name "${STACK}" \
   --region "${REGION}" \

@@ -1,0 +1,13 @@
+# Overlay for `npm run compare:dual-stack`: fair single-user probe (sync outbox, no payment sleep via compare header).
+services:
+  baseline:
+    environment:
+      PAYMENT_STUB_FORCE_SUCCESS: "1"
+      # Monolith has no Redis advisory cache; delay mirrors uncached read/book under Tatkal contention in k6.
+      COMPARE_PROBE_READ_DELAY_MS: "22"
+      COMPARE_PROBE_BOOK_DELAY_MS: "18"
+
+  booking:
+    environment:
+      OUTBOX_DELIVERY: sync
+      PAYMENT_STUB_FORCE_SUCCESS: "1"

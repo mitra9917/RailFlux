@@ -17,6 +17,7 @@ export function normalizeAvailabilityBody(body) {
     trainRunId: body.trainRunId,
     class: body.class,
     quota: body.quota,
+    inventoryId: body.inventoryId,
     displayedSeats: body.displayedSeats,
     freshness,
   };

@@ -19,7 +19,9 @@
 | Section | What it proves |
 | --- | --- |
 | **Paired experiment metrics** | Bar charts: p99 latency, success rate, RPS/$ — baseline (blue) vs optimized (green) |
-| **Run side-by-side booking probe** | Same TC-001 Tatkal flow on both stacks; timings + cache BYPASS vs HIT/MISS |
+| **Run side-by-side booking probe** | Paired TC-001: shared warmup, parallel timed Search → Availability (optimized **HIT**) → Book on both stacks |
+
+`compare:dual-stack` applies `docker-compose.compare.yml` (sync outbox on booking, compare probe skips payment sleep) so the live demo favors a fair architecture comparison.
 
 ## Use your real experiment numbers (optional)
 

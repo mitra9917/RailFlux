@@ -77,12 +77,13 @@ export function createBookingsRouter(pool: DbPool): Router {
       }
 
       const runId = req.runId ?? DEFAULT_RUN_ID;
+      const compareProbe = req.header('X-Railflux-Compare-Probe') === '1';
       const created = await createBooking(pool, {
         runId,
         idempotencyKeyHash,
         requestHash,
         body,
-        skipPaymentDelay: process.env.NODE_ENV === 'test',
+        skipPaymentDelay: process.env.NODE_ENV === 'test' || compareProbe,
       });
 
       if (created.kind === 'in_progress') {

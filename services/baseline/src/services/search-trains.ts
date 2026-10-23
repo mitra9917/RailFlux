@@ -12,6 +12,17 @@ interface SearchRow extends RowDataPacket {
 }
 
 export async function searchTrains(pool: DbPool, query: SearchTrainsQuery): Promise<TrainRun[]> {
+  const filters = ['tr.journey_date = ?'];
+  const params: Array<string> = [query.date];
+  if (query.from) {
+    filters.push('t.source = ?');
+    params.push(query.from);
+  }
+  if (query.to) {
+    filters.push('t.destination = ?');
+    params.push(query.to);
+  }
+
   const [rows] = await pool.query<SearchRow[]>(
     `SELECT tr.id AS trainRunId,
             t.train_no AS trainNo,
@@ -21,9 +32,9 @@ export async function searchTrains(pool: DbPool, query: SearchTrainsQuery): Prom
             t.destination
      FROM train_runs tr
      INNER JOIN trains t ON t.train_no = tr.train_no
-     WHERE t.source = ? AND t.destination = ? AND tr.journey_date = ?
+     WHERE ${filters.join(' AND ')}
      ORDER BY t.train_no`,
-    [query.from, query.to, query.date],
+    params,
   );
 
   return rows.map((row) => ({

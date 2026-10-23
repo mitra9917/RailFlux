@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getDevJwtSecret, getSyntheticUserId } from '../config/env';
+import { getDevJwtSecret, getSyntheticUserId } from '@/config/env';
 import {
   clearStoredToken,
   loadStoredToken,
   mintSyntheticSession,
   storeToken,
   type SyntheticSession,
-} from '../auth/synthetic-auth';
+} from '@/auth/synthetic-auth';
+import { AppCard } from '@/components/app/AppCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 type Props = {
   onSessionChange: (session: SyntheticSession | null) => void;
+  /** Glass card on hero background */
+  immersive?: boolean;
+  cardClassName?: string;
 };
 
-export function SyntheticAuthPanel({ onSessionChange }: Props) {
+export function SyntheticAuthPanel({ onSessionChange, immersive, cardClassName }: Props) {
   const [userId, setUserId] = useState(getSyntheticUserId());
   const [pasteToken, setPasteToken] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -72,51 +80,66 @@ export function SyntheticAuthPanel({ onSessionChange }: Props) {
     onSessionChange(null);
   }
 
+  const fieldShell = immersive
+    ? '[&_label]:text-slate-200 [&_input]:border-white/20 [&_input]:bg-slate-950/40 [&_input]:text-slate-50 [&_textarea]:border-white/20 [&_textarea]:bg-slate-950/40 [&_textarea]:text-slate-50'
+    : '';
+
   return (
-    <section className="panel auth-panel" aria-labelledby="auth-heading">
-      <h2 id="auth-heading">Synthetic sign-in</h2>
-      <p className="muted">
-        Academic simulator only — use fixture UUIDs and{' '}
-        <code>npm run mint:jwt</code>; never real IRCTC or payment credentials.
-      </p>
+    <AppCard
+      title="Synthetic sign-in"
+      subtitle="Academic simulator only — fixture UUIDs and npm run mint:jwt. Never real IRCTC or payment credentials."
+      className={cn(
+        immersive &&
+          'border-white/15 bg-slate-950/55 text-slate-100 shadow-2xl backdrop-blur-xl [&_[data-slot=card-description]]:text-slate-300',
+        fieldShell,
+        cardClassName,
+      )}
+    >
       {session ? (
-        <p>
-          Signed in as <code>{session.userId}</code> ({session.cohort})
-          <button type="button" className="linkish" onClick={signOut}>
+        <div
+          className={cn(
+            'flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3',
+            immersive ? 'bg-emerald-500/15 text-emerald-50' : 'bg-accent/60',
+          )}
+        >
+          <span className="text-sm">
+            Signed in as <code className="font-mono text-xs">{session.userId}</code>
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={signOut}>
             Sign out
-          </button>
-        </p>
+          </Button>
+        </div>
       ) : (
-        <>
-          <label className="field">
-            Synthetic user UUID
-            <input
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="synthetic-user">Synthetic user UUID</Label>
+            <Input
+              id="synthetic-user"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
-          </label>
-          <div className="row">
-            <button type="button" onClick={() => void signInWithDevSecret()}>
-              Mint dev JWT
-            </button>
           </div>
-          <label className="field">
-            Or paste JWT
+          <Button type="button" onClick={() => void signInWithDevSecret()}>
+            Mint dev JWT
+          </Button>
+          <div className="space-y-2">
+            <Label htmlFor="paste-jwt">Or paste JWT</Label>
             <textarea
+              id="paste-jwt"
+              className="flex min-h-[4rem] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               value={pasteToken}
               onChange={(e) => setPasteToken(e.target.value)}
-              rows={2}
               placeholder="Bearer token from mint:jwt"
             />
-          </label>
-          <button type="button" onClick={applyPastedToken}>
+          </div>
+          <Button type="button" variant="secondary" onClick={applyPastedToken}>
             Use pasted token
-          </button>
-        </>
+          </Button>
+        </div>
       )}
-      {error ? <p className="error">{error}</p> : null}
-    </section>
+      {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+    </AppCard>
   );
 }
