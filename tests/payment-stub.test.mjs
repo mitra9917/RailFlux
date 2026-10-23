@@ -5,9 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import {
   DEFAULT_PAYMENT_STUB_CONFIG,
+  PAYMENT_TOKEN_FORCE_FAIL,
+  PAYMENT_TOKEN_FORCE_SUCCESS,
+  PAYMENT_TOKEN_LIVE,
   PaymentStubSequence,
   derivePaymentStubOutcome,
   parsePaymentStubConfig,
+  paymentOutcomeOverride,
 } from '@railflux/shared';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,4 +55,10 @@ test('pinned failure count for first 500 attempts matches manifest failure_rate'
     if (!derivePaymentStubOutcome(DEFAULT_PAYMENT_STUB_CONFIG, i).success) failures += 1;
   }
   assert.equal(failures, 15);
+});
+
+test('demo payment tokens force pass or fail without using the live sequence', () => {
+  assert.equal(paymentOutcomeOverride(PAYMENT_TOKEN_LIVE), null);
+  assert.equal(paymentOutcomeOverride(PAYMENT_TOKEN_FORCE_FAIL)?.success, false);
+  assert.equal(paymentOutcomeOverride(PAYMENT_TOKEN_FORCE_SUCCESS)?.success, true);
 });

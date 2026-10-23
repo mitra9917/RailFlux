@@ -7,6 +7,27 @@ export type PaymentStubOutcome = {
   stubSequence: string;
 };
 
+/** Default experiment token — outcome comes from the seeded sequence (~2% fail). */
+export const PAYMENT_TOKEN_LIVE = 'stub-payment-token';
+/** Demo / lab override: always decline and release seats in the same transaction. */
+export const PAYMENT_TOKEN_FORCE_FAIL = 'stub-payment-fail';
+/** Demo / lab override: always authorize without consuming the run sequence. */
+export const PAYMENT_TOKEN_FORCE_SUCCESS = 'stub-payment-success';
+
+/**
+ * Optional token override for the UI lab. Experiment traffic keeps `stub-payment-token`
+ * so the seeded failure sequence (and AWS compare probes) stay deterministic.
+ */
+export function paymentOutcomeOverride(paymentToken: string): PaymentStubOutcome | null {
+  if (paymentToken === PAYMENT_TOKEN_FORCE_FAIL) {
+    return { success: false, delayMs: 0, stubSequence: 'demo:forced-fail' };
+  }
+  if (paymentToken === PAYMENT_TOKEN_FORCE_SUCCESS) {
+    return { success: true, delayMs: 0, stubSequence: 'demo:forced-success' };
+  }
+  return null;
+}
+
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {

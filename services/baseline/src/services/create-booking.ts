@@ -4,6 +4,7 @@ import {
   RailFluxError,
   assertBookingTransition,
   generateSimulatedPnr,
+  paymentOutcomeOverride,
 } from '@railflux/shared';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import type { DbPool } from '../db.js';
@@ -162,7 +163,8 @@ async function createBookingAttempt(
     const outcome =
       process.env.PAYMENT_STUB_FORCE_SUCCESS === '1'
         ? { success: true, delayMs: 0, stubSequence: 'test:forced-success' }
-        : getPaymentStubRunSequence().nextOutcome();
+        : (paymentOutcomeOverride(input.body.paymentToken) ??
+          getPaymentStubRunSequence().nextOutcome());
     if (!input.skipPaymentDelay && outcome.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, outcome.delayMs));
     }
