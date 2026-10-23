@@ -31,3 +31,23 @@ test('M8 #73 advisory banner on book flow', () => {
   assert.match(book, /AdvisoryBanner/);
   assert.match(book, /idempotencyKey/);
 });
+
+test('pay page wires approve and decline stubs; status retries FAILED', () => {
+  const pay = readFileSync(join(frontend, 'src/pages/PayPage.tsx'), 'utf8');
+  const status = readFileSync(join(frontend, 'src/pages/BookingStatusPage.tsx'), 'utf8');
+  assert.match(pay, /DEMO_PAYMENT_SUCCESS_TOKEN/);
+  assert.match(pay, /DEMO_PAYMENT_FAIL_TOKEN/);
+  assert.match(status, /FAILED/);
+  assert.match(status, /Retry payment/);
+  assert.match(status, /payHrefFromJourney/);
+});
+
+test('confirmed booking and architecture replay the seat rush', () => {
+  const status = readFileSync(join(frontend, 'src/pages/BookingStatusPage.tsx'), 'utf8');
+  const architecture = readFileSync(join(frontend, 'src/pages/ArchitecturePage.tsx'), 'utf8');
+  const rush = readFileSync(join(frontend, 'src/components/architecture/TrafficRush.tsx'), 'utf8');
+  assert.match(status, /TrafficRush/);
+  assert.match(architecture, /TrafficRush/);
+  assert.match(rush, /AWS WAF/);
+  assert.match(rush, /not an idempotency mismatch/);
+});

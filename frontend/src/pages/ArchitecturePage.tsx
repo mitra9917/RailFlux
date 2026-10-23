@@ -1,4 +1,5 @@
 import { ArchitectureFlows } from '@/components/architecture/ArchitectureFlows';
+import { TrafficRush } from '@/components/architecture/TrafficRush';
 import { PageShell } from '@/components/app/PageShell';
 
 export function ArchitecturePage() {
@@ -8,6 +9,7 @@ export function ArchitecturePage() {
       title="System architectures"
       lead="The same booking, two request paths. Watch the glow move with the work."
     >
+      <TrafficRush />
       <ArchitectureFlows />
     </PageShell>
   );
