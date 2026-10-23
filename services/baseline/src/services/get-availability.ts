@@ -4,6 +4,7 @@ import type { DbPool } from '../db.js';
 import { baselineReadFreshness } from '../freshness.js';
 
 interface InventoryRow extends RowDataPacket {
+  inventoryId: string;
   trainRunId: string;
   classCode: string;
   quota: string;
@@ -15,7 +16,8 @@ export async function getAvailability(
   query: AvailabilityQuery,
 ): Promise<Availability> {
   const [rows] = await pool.query<InventoryRow[]>(
-    `SELECT si.train_run_id AS trainRunId,
+    `SELECT si.id AS inventoryId,
+            si.train_run_id AS trainRunId,
             si.class_code AS classCode,
             si.quota,
             si.available_seats AS availableSeats
@@ -35,6 +37,7 @@ export async function getAvailability(
     trainRunId: row.trainRunId,
     class: query.class,
     quota: query.quota,
+    inventoryId: row.inventoryId,
     displayedSeats: row.availableSeats,
     freshness: baselineReadFreshness(),
   };

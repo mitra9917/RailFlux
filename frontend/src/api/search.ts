@@ -14,11 +14,11 @@ export type AvailabilityParams = {
 };
 
 export async function searchTrains(params: SearchParams): Promise<SearchTrainsResponse> {
-  const q = new URLSearchParams({
-    from: params.from.trim().toUpperCase(),
-    to: params.to.trim().toUpperCase(),
-    date: params.date.trim(),
-  });
+  const q = new URLSearchParams({ date: params.date.trim() });
+  const from = params.from.trim().toUpperCase();
+  const to = params.to.trim().toUpperCase();
+  if (from) q.set('from', from);
+  if (to) q.set('to', to);
   const res = await apiFetch(`/v1/search?${q.toString()}`);
   return parseApiJson<SearchTrainsResponse>(res);
 }

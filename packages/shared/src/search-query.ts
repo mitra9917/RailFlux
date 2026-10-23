@@ -31,20 +31,26 @@ function parseIsoDate(value: string): string {
 }
 
 export type SearchTrainsQuery = {
-  from: string;
-  to: string;
+  from: string | null;
+  to: string | null;
   date: string;
 };
 
+function optionalStation(value: string | undefined, label: string): string | null {
+  if (!value || !value.trim()) return null;
+  const code = value.trim();
+  if (!STATION_CODE.test(code)) invalid(`Invalid ${label} station`);
+  return code;
+}
+
 /** OpenAPI `searchTrains` query parameters. */
 export function parseSearchTrainsQuery(raw: Record<string, unknown>): SearchTrainsQuery {
-  const from = one(raw.from);
-  const to = one(raw.to);
   const date = one(raw.date);
-
-  if (!from || !STATION_CODE.test(from)) invalid('Invalid from station');
-  if (!to || !STATION_CODE.test(to)) invalid('Invalid to station');
   if (!date) invalid('Invalid date');
 
-  return { from, to, date: parseIsoDate(date) };
+  return {
+    from: optionalStation(one(raw.from), 'from'),
+    to: optionalStation(one(raw.to), 'to'),
+    date: parseIsoDate(date),
+  };
 }

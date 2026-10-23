@@ -1,0 +1,40 @@
+/* Compare charts & probe — kept minimal outside utilities */
+.compare-chart {
+  @apply w-full border-collapse text-sm mt-2;
+}
+
+.compare-chart th,
+.compare-chart td {
+  @apply border border-border px-3 py-2 text-left;
+}
+
+.compare-chart td:nth-child(3),
+.compare-chart td:nth-child(5) {
+  width: 22%;
+}
+
+.bar-baseline {
+  @apply h-2 min-w-0.5 rounded-full bg-blue-500;
+}
+
+.bar-optimized {
+  @apply h-2 min-w-0.5 rounded-full bg-emerald-500;
+}
+
+.setup-pre {
+  @apply bg-slate-900 text-slate-200 p-4 rounded-lg text-xs overflow-x-auto;
+}
+
+@keyframes flow-dot {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 6px);
+    opacity: 0.35;
+  }
+}

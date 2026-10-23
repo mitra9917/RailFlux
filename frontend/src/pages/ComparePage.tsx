@@ -1,177 +1,151 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  MetricsComparePanel,
-  type DashboardData,
-} from '../components/MetricsComparePanel';
-import { loadStoredToken } from '../auth/synthetic-auth';
+import { Play, RefreshCw } from 'lucide-react';
+import { MetricsComparePanel } from '@/components/MetricsComparePanel';
+import { SyntheticAuthPanel } from '@/components/SyntheticAuthPanel';
+import { loadStoredToken } from '@/auth/synthetic-auth';
 import {
   checkCompareHealth,
-  probeArchitectureBooking,
-  type ArchitectureProbeResult,
-} from '../lib/compare-api';
-import { generateIdempotencyKey } from '../lib/idempotency-key';
+  fetchCompareK6Status,
+  runLiveK6Compare,
+  type LiveK6CompareResult,
+} from '@/lib/compare-api';
+import { AppCard } from '@/components/app/AppCard';
+import { PageShell } from '@/components/app/PageShell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const BASELINE_PREFIX = '/compare-baseline' as const;
 const OPTIMIZED_PREFIX = '/compare-optimized' as const;
 
 export function ComparePage() {
-  const [metrics, setMetrics] = useState<DashboardData | null>(null);
-  const [metricsNote, setMetricsNote] = useState('Loading metrics…');
   const [baselineUp, setBaselineUp] = useState<boolean | null>(null);
   const [optimizedUp, setOptimizedUp] = useState<boolean | null>(null);
-  const [baselineProbe, setBaselineProbe] = useState<ArchitectureProbeResult | null>(null);
-  const [optimizedProbe, setOptimizedProbe] = useState<ArchitectureProbeResult | null>(null);
-  const [probing, setProbing] = useState(false);
-  const [probeError, setProbeError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void fetch('/comparison-data.json')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((data: DashboardData) => {
-        setMetrics(data);
-        setMetricsNote(
-          'Loaded comparison-data.json. Replace frontend/public/comparison-data.json with experiment/dashboard/output/*-dashboard.json after your campaign.',
-        );
-      })
-      .catch(() => {
-        setMetricsNote('Could not load comparison-data.json');
-      });
-  }, []);
+  const [k6Ready, setK6Ready] = useState<boolean | null>(null);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<LiveK6CompareResult | null>(null);
+  const [hasToken, setHasToken] = useState(() => Boolean(loadStoredToken()));
 
   const refreshHealth = useCallback(async () => {
-    const [b, o] = await Promise.all([
+    const [b, o, k6] = await Promise.all([
       checkCompareHealth(BASELINE_PREFIX),
       checkCompareHealth(OPTIMIZED_PREFIX),
+      fetchCompareK6Status(),
     ]);
     setBaselineUp(b);
     setOptimizedUp(o);
+    setK6Ready(k6.k6);
+    return { baseline: b, optimized: o, k6: k6.k6, busy: k6.busy };
+  }, []);
+
+  const runCompare = useCallback(async () => {
+    const token = loadStoredToken();
+    if (!token) {
+      setHasToken(false);
+      setError('Sign in (Mint dev JWT) before generating traffic.');
+      return;
+    }
+    setHasToken(true);
+    setError(null);
+    setRunning(true);
+    try {
+      const next = await runLiveK6Compare(token);
+      setResult(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'k6 compare failed');
+    } finally {
+      setRunning(false);
+    }
   }, []);
 
   useEffect(() => {
     void refreshHealth();
   }, [refreshHealth]);
 
-  async function runSideBySideProbe() {
-    const token = loadStoredToken();
-    if (!token) {
-      setProbeError('Sign in on Home first (Mint dev JWT).');
-      return;
-    }
-    setProbeError(null);
-    setProbing(true);
-    setBaselineProbe(null);
-    setOptimizedProbe(null);
-    try {
-      const bKey = generateIdempotencyKey();
-      const oKey = generateIdempotencyKey();
-      const b = await probeArchitectureBooking('baseline', BASELINE_PREFIX, token, bKey);
-      setBaselineProbe(b);
-      const o = await probeArchitectureBooking('optimized', OPTIMIZED_PREFIX, token, oKey);
-      setOptimizedProbe(o);
-      if (!b.ok && !o.ok) {
-        setProbeError('Both probes failed — start dual stack (see instructions below).');
-      }
-    } finally {
-      setProbing(false);
-    }
-  }
+  const ready = baselineUp && optimizedUp && k6Ready;
 
   return (
-    <>
-      <section className="panel">
-        <h2>Baseline vs optimized</h2>
-        <p>
-          Side-by-side view for submission: <strong>paired load-test metrics</strong> (experiment) and{' '}
-          <strong>live Tatkal booking probes</strong> (same TC-001 flow on each architecture).
+    <PageShell
+      wide
+      title="Experiments"
+      lead="Live k6 burst against baseline :3000 and optimized :3001. Same mix, same seconds."
+    >
+      <AppCard title="Generate traffic">
+        <p className="text-sm text-muted-foreground">
+          Runs <code className="font-mono text-xs">compare-burst.js</code> (PT-005 70/20/10) for 8s
+          at 12 req/s on each stack. Numbers below are from that run — not a static JSON file.
         </p>
-        <p className="muted">
-          Synthetic RailFlux architectures — not IRCTC production. Metrics come from paired k6 runs; live
-          probes show cache path and booking latency on your machine.
-        </p>
-      </section>
 
-      {metrics ? (
-        <MetricsComparePanel data={metrics} dataSourceNote={metricsNote} />
-      ) : (
-        <section className="panel">
-          <p className="muted">{metricsNote}</p>
-        </section>
-      )}
-
-      <section className="panel compare-live">
-        <h2>Live booking probe (same test case)</h2>
-        <p className="muted">
-          Runs Search → Availability (3A Tatkal) → Book for <strong>baseline</strong> (:3000) and{' '}
-          <strong>optimized</strong> (:3001) in parallel. Requires{' '}
-          <code>npm run compare:dual-stack</code> and sign-in on <Link to="/">Home</Link>.
-        </p>
-        <p className="row compare-health">
-          <span>
-            Baseline API{' '}
-            {baselineUp === null ? '…' : baselineUp ? <span className="success">up</span> : <span className="error">down</span>}
-          </span>
-          <span>
-            Optimized API{' '}
-            {optimizedUp === null ? '…' : optimizedUp ? <span className="success">up</span> : <span className="error">down</span>}
-          </span>
-          <button type="button" className="secondary" onClick={() => void refreshHealth()}>
-            Refresh status
-          </button>
-        </p>
-        <button type="button" disabled={probing} onClick={() => void runSideBySideProbe()}>
-          {probing ? 'Running probes…' : 'Run side-by-side booking probe'}
-        </button>
-        {probeError ? <p className="error">{probeError}</p> : null}
-
-        <div className="compare-columns">
-          <ProbeCard title="Baseline (monolith)" result={baselineProbe} />
-          <ProbeCard title="Optimized (read/cache + booking + queue)" result={optimizedProbe} />
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <HealthBadge label="Baseline" up={baselineUp} />
+          <HealthBadge label="Optimized" up={optimizedUp} />
+          <HealthBadge label="k6" up={k6Ready} />
+          <Button type="button" variant="secondary" size="sm" onClick={() => void refreshHealth()}>
+            <RefreshCw className="size-3.5" />
+            Recheck
+          </Button>
         </div>
 
-        <details className="compare-setup">
-          <summary>Start both APIs locally (submission demo)</summary>
-          <pre className="setup-pre">{`npm run compare:dual-stack
-# In another terminal:
-npm run dev:frontend
-# Home → Mint JWT → open Compare → Run probe`}</pre>
-          <p className="muted">
-            To use real campaign numbers: copy{' '}
-            <code>experiment/dashboard/output/&lt;campaign&gt;-dashboard.json</code> to{' '}
-            <code>frontend/public/comparison-data.json</code> and refresh.
+        {!hasToken ? (
+          <div className="mt-4 max-w-md">
+            <SyntheticAuthPanel
+              onSessionChange={(s) => {
+                setHasToken(Boolean(s));
+                if (s) void runCompare();
+              }}
+            />
+          </div>
+        ) : null}
+
+        {k6Ready === false ? (
+          <p className="mt-4 text-sm text-destructive">
+            k6 is not on PATH. Install with <code className="font-mono text-xs">brew install k6</code>.
           </p>
-        </details>
-      </section>
-    </>
+        ) : null}
+        {baselineUp === false || optimizedUp === false ? (
+          <p className="mt-4 text-sm text-destructive">
+            Dual stack is down. Start{' '}
+            <code className="font-mono text-xs">npm run compare:dual-stack</code>.
+          </p>
+        ) : null}
+
+        <Button
+          type="button"
+          className="mt-4"
+          disabled={running || !ready || !hasToken}
+          onClick={() => void runCompare()}
+        >
+          <Play className="size-4" />
+          {running ? 'k6 running on both stacks…' : result ? 'Run again' : 'Run live k6 compare'}
+        </Button>
+        {running ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Generating traffic now (~8–12s). Baseline and optimized are hit in parallel.
+          </p>
+        ) : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+        <p className="mt-4 text-xs text-muted-foreground">
+          Needs <Link to="/">a minted JWT</Link> and this machine running Vite + both APIs.
+        </p>
+      </AppCard>
+
+      {result ? <MetricsComparePanel data={result} /> : null}
+    </PageShell>
   );
 }
 
-function ProbeCard({ title, result }: { title: string; result: ArchitectureProbeResult | null }) {
+function HealthBadge({ label, up }: { label: string; up: boolean | null }) {
   return (
-    <div className="compare-card">
-      <h3>{title}</h3>
-      {!result ? (
-        <p className="muted">No probe yet.</p>
-      ) : result.ok ? (
-        <dl className="status-dl">
-          <dt>Total</dt>
-          <dd>{result.totalMs.toFixed(0)} ms</dd>
-          <dt>Search</dt>
-          <dd>{result.searchMs.toFixed(0)} ms</dd>
-          <dt>Availability</dt>
-          <dd>
-            {result.availabilityMs.toFixed(0)} ms · cache {result.cacheStatus ?? '—'}
-          </dd>
-          <dt>Book</dt>
-          <dd>{result.bookingMs.toFixed(0)} ms</dd>
-          <dt>Status</dt>
-          <dd>{result.bookingStatus}</dd>
-          <dt>PNR</dt>
-          <dd>{result.simulatedPnr ?? '—'}</dd>
-        </dl>
+    <span className="inline-flex items-center gap-2 text-sm">
+      {label}{' '}
+      {up === null ? (
+        <Badge variant="outline">…</Badge>
+      ) : up ? (
+        <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800">up</Badge>
       ) : (
-        <p className="error">{result.error}</p>
+        <Badge variant="destructive">down</Badge>
       )}
-    </div>
+    </span>
   );
 }

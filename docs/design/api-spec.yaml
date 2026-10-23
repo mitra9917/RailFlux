@@ -34,17 +34,17 @@ paths:
     get:
       tags: [search]
       operationId: searchTrains
-      summary: List train runs for a route and date
+      summary: List train runs for a date, optionally filtered by route
       security: [{syntheticJwt: []}]
       parameters:
         - $ref: "#/components/parameters/RunIdHeader"
         - name: from
           in: query
-          required: true
+          required: false
           schema: {type: string, pattern: "^[A-Z]{2,5}$"}
         - name: to
           in: query
-          required: true
+          required: false
           schema: {type: string, pattern: "^[A-Z]{2,5}$"}
         - name: date
           in: query
@@ -258,11 +258,12 @@ components:
           description: BYPASS indicates baseline or cache-disabled read path.
     Availability:
       type: object
-      required: [trainRunId, class, quota, displayedSeats, freshness]
+      required: [trainRunId, class, quota, inventoryId, displayedSeats, freshness]
       properties:
         trainRunId: {type: string, format: uuid}
         class: {$ref: "#/components/schemas/TravelClass"}
         quota: {$ref: "#/components/schemas/Quota"}
+        inventoryId: {type: string, format: uuid}
         displayedSeats: {type: integer, minimum: 0}
         freshness: {$ref: "#/components/schemas/Freshness"}
     Passenger:

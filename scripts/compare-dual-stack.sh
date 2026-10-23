@@ -10,8 +10,8 @@ export BASELINE_HOST_PORT=3000
 export EDGE_HOST_PORT=3001
 export SYNTHETIC_JWT_SECRET="${SYNTHETIC_JWT_SECRET:-dev-only-change-me}"
 
-echo "Starting MySQL + baseline (3000) + optimized stack (3001)…"
-docker compose up -d mysql db-init baseline redis elasticmq sqs-init read booking worker edge
+echo "Starting MySQL + baseline (3000) + optimized stack (3001) [compare overlay]…"
+docker compose -f docker-compose.yml -f docker-compose.compare.yml up -d mysql db-init baseline redis elasticmq sqs-init read booking worker edge
 
 echo "Waiting for health…"
 for i in $(seq 1 60); do

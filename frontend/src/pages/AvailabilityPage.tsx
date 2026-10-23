@@ -1,126 +1,125 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ApiError } from '../api/client';
-import { getAvailability, type AvailabilityParams } from '../api/search';
+import { getAvailability } from '@/api/search';
 import type { Availability, TravelClass } from '@railflux/shared/api-types';
-import { AdvisoryBanner } from '../components/AdvisoryBanner';
-import { FreshnessLabel } from '../components/FreshnessLabel';
-import { TC001_INVENTORY_3A_ID } from '../fixtures/tc001-demo';
+import { PageShell } from '@/components/app/PageShell';
+import { patchJourneyTrace } from '@/lib/journey-trace';
+import { CLASS_LABEL } from '@/lib/travel-copy';
+import { cn } from '@/lib/utils';
 
 const CLASSES: TravelClass[] = ['SL', '3A', '2A'];
 
-function parseParams(search: URLSearchParams): AvailabilityParams | null {
-  const trainRunId = search.get('trainRunId')?.trim();
-  const travelClass = search.get('class')?.trim() as TravelClass | undefined;
-  const quota = search.get('quota')?.trim();
-  if (!trainRunId || !travelClass || quota !== 'TATKAL') return null;
-  if (!CLASSES.includes(travelClass)) return null;
-  return { trainRunId, class: travelClass, quota: 'TATKAL' };
-}
-
 export function AvailabilityPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [travelClass, setTravelClass] = useState<TravelClass>(
-    (searchParams.get('class') as TravelClass) || '3A',
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [availability, setAvailability] = useState<Availability | null>(null);
-
+  const [searchParams] = useSearchParams();
   const trainRunId = searchParams.get('trainRunId')?.trim() ?? '';
+  const trainNo = searchParams.get('trainNo') ?? '';
+  const trainName = searchParams.get('name') ?? '';
+  const from = searchParams.get('from') ?? '';
+  const to = searchParams.get('to') ?? '';
+  const date = searchParams.get('date') ?? '';
+
+  const [rows, setRows] = useState<Partial<Record<TravelClass, Availability | 'error'>>>({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const params = parseParams(searchParams);
-    if (!params) {
-      setAvailability(null);
-      setError(null);
-      return;
-    }
-
+    if (!trainRunId) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
-    void getAvailability(params)
-      .then((data) => {
-        if (!cancelled) setAvailability(data);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (err instanceof ApiError) {
-          setError(
-            err.errorCode === 'VALIDATION_ERROR'
-              ? `Validation: ${err.message}`
-              : `${err.message} (${err.status})`,
-          );
-        } else {
-          setError(err instanceof Error ? err.message : 'Availability failed');
+    const t0 = performance.now();
+    void Promise.all(
+      CLASSES.map(async (travelClass) => {
+        try {
+          const data = await getAvailability({ trainRunId, class: travelClass, quota: 'TATKAL' });
+          return [travelClass, data] as const;
+        } catch {
+          return [travelClass, 'error'] as const;
         }
-        setAvailability(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
+      }),
+    ).then((entries) => {
+      if (cancelled) return;
+      const next: Partial<Record<TravelClass, Availability | 'error'>> = {};
+      for (const [k, v] of entries) next[k] = v;
+      setRows(next);
+      const firstOk = entries.find(([, v]) => v !== 'error')?.[1];
+      if (firstOk && firstOk !== 'error') {
+        patchJourneyTrace({
+          availabilityMs: performance.now() - t0,
+          cacheStatus: firstOk.freshness?.cacheStatus ?? null,
+          trainRunId,
+          travelClass: firstOk.class,
+          quota: firstOk.quota,
+          trainNo,
+          trainName,
+          from,
+          to,
+          date,
+        });
+      }
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [trainRunId, trainNo, trainName, from, to, date]);
 
-  function applyClass(next: TravelClass) {
-    setTravelClass(next);
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('class', next);
-    nextParams.set('quota', 'TATKAL');
-    setSearchParams(nextParams);
-  }
+  const bookHref = (travelClass: TravelClass, inventoryId: string) => {
+    const q = new URLSearchParams({
+      inventoryId,
+      trainRunId,
+      class: travelClass,
+      quota: 'TATKAL',
+      trainNo,
+      name: trainName,
+      from,
+      to,
+      date,
+    });
+    return `/book?${q.toString()}`;
+  };
 
   return (
-    <section className="panel">
-      <h2>Availability</h2>
-      <AdvisoryBanner />
+    <PageShell
+      title={trainName || 'Availability'}
+      lead={[trainNo, from && to ? `${from} → ${to}` : '', date].filter(Boolean).join(' · ')}
+    >
       {!trainRunId ? (
-        <p className="error">
-          Missing train run — start from <Link to="/search">Search</Link>.
+        <p className="text-sm text-muted-foreground">
+          Choose a train from <Link to="/search">Search</Link>.
         </p>
       ) : (
-        <>
-          <p className="muted">
-            Run <code>{trainRunId}</code> · Tatkal quota · class {travelClass}
-          </p>
-          <div className="class-tabs" role="tablist" aria-label="Travel class">
-            {CLASSES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                role="tab"
-                aria-selected={travelClass === c}
-                className={travelClass === c ? 'tab active' : 'tab'}
-                onClick={() => applyClass(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          {loading ? <p className="muted">Loading…</p> : null}
-          {error ? <p className="error">{error}</p> : null}
-          {availability ? (
-            <div className="availability-card">
-              <p className="availability-count">{availability.displayedSeats} seats shown (advisory)</p>
-              <FreshnessLabel freshness={availability.freshness} context="Displayed availability" />
-              {travelClass === '3A' ? (
-                <Link
-                  className="button-link"
-                  to={`/book?inventoryId=${encodeURIComponent(TC001_INVENTORY_3A_ID)}`}
-                >
-                  Book 3A Tatkal (TC-001 inventory)
-                </Link>
-              ) : (
-                <p className="muted">Booking demo inventory is wired for 3A (TC-001).</p>
-              )}
-            </div>
-          ) : null}
-        </>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {CLASSES.map((code) => {
+            const row = rows[code];
+            const ok = row && row !== 'error';
+            const seats = ok ? row.displayedSeats : null;
+            const bookable = ok && Boolean(row.inventoryId);
+            return (
+              <article key={code} className={cn('flex flex-col rounded-3xl border border-border/70 p-6')}>
+                <p className="text-sm text-muted-foreground">{CLASS_LABEL[code]}</p>
+                <p className="mt-8 text-3xl font-semibold tracking-tight">
+                  {loading ? '—' : seats == null ? '—' : seats}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">seats shown</p>
+                {bookable ? (
+                  <Link
+                    to={bookHref(code, row.inventoryId)}
+                    className="mt-10 text-sm font-medium text-foreground no-underline hover:opacity-70"
+                  >
+                    Select
+                  </Link>
+                ) : (
+                  <p className="mt-10 text-sm text-muted-foreground">
+                    {loading ? '' : row === 'error' ? 'Unavailable' : ''}
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </div>
       )}
-    </section>
+      <p className="text-[12px] text-muted-foreground">
+        Seat counts are advisory. Allocation happens only when the booking commits.
+      </p>
+    </PageShell>
   );
 }

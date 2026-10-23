@@ -34,6 +34,7 @@ test('concurrent availability cache misses coalesce to one backend load', async 
         trainRunId: query.trainRunId,
         class: query.class,
         quota: query.quota,
+        inventoryId: 'c0714d77-5e36-4aeb-a001-dd17aa3809c3',
         displayedSeats: 42,
         freshness: {
           observedAt: new Date().toISOString(),
