@@ -34,51 +34,58 @@ function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
+function attachCompareK6(middlewares: { use: (fn: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void }): void {
+  middlewares.use((req, res, next) => {
+    const url = req.url?.split('?')[0];
+    if (url !== PATH) {
+      next();
+      return;
+    }
+
+    void (async () => {
+      if (req.method === 'GET') {
+        sendJson(res, 200, {
+          k6: await checkK6Installed(),
+          busy,
+        });
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'Method not allowed' });
+        return;
+      }
+
+      if (busy) {
+        sendJson(res, 409, { error: 'A live k6 compare is already running.' });
+        return;
+      }
+
+      busy = true;
+      try {
+        const body = await readJson(req);
+        const token = typeof body.token === 'string' ? body.token : '';
+        const result = await runPairedK6Burst({ token: token || undefined });
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendJson(res, 500, {
+          error: err instanceof Error ? err.message : 'k6 compare failed',
+        });
+      } finally {
+        busy = false;
+      }
+    })();
+  });
+}
+
 export function compareK6Plugin(): Plugin {
   return {
     name: 'railflux-compare-k6',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = req.url?.split('?')[0];
-        if (url !== PATH) {
-          next();
-          return;
-        }
-
-        void (async () => {
-          if (req.method === 'GET') {
-            sendJson(res, 200, {
-              k6: await checkK6Installed(),
-              busy,
-            });
-            return;
-          }
-
-          if (req.method !== 'POST') {
-            sendJson(res, 405, { error: 'Method not allowed' });
-            return;
-          }
-
-          if (busy) {
-            sendJson(res, 409, { error: 'A live k6 compare is already running.' });
-            return;
-          }
-
-          busy = true;
-          try {
-            const body = await readJson(req);
-            const token = typeof body.token === 'string' ? body.token : '';
-            const result = await runPairedK6Burst({ token: token || undefined });
-            sendJson(res, 200, result);
-          } catch (err) {
-            sendJson(res, 500, {
-              error: err instanceof Error ? err.message : 'k6 compare failed',
-            });
-          } finally {
-            busy = false;
-          }
-        })();
-      });
+      attachCompareK6(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      attachCompareK6(server.middlewares);
     },
   };
 }

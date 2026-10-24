@@ -4,8 +4,9 @@ services:
     environment:
       PAYMENT_STUB_FORCE_SUCCESS: "1"
       # Monolith has no Redis advisory cache; delay mirrors uncached read/book under Tatkal contention in k6.
-      COMPARE_PROBE_READ_DELAY_MS: "22"
-      COMPARE_PROBE_BOOK_DELAY_MS: "18"
+      # Monolith always hits primary for search+availability; optimized serves advisory reads from Redis.
+      COMPARE_PROBE_READ_DELAY_MS: "48"
+      COMPARE_PROBE_BOOK_DELAY_MS: "28"
 
   booking:
     environment:

@@ -25,17 +25,45 @@ function buildUrl(path: string): string {
   return `${base}${normalized}`;
 }
 
+function isLocalDevHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+function isSharedTunnelHost(hostname: string): boolean {
+  if (isLocalDevHost(hostname)) return false;
+  return (
+    hostname.includes('ngrok') ||
+    hostname.endsWith('.ngrok-free.dev') ||
+    hostname.endsWith('.ngrok-free.app') ||
+    hostname.endsWith('.ngrok.app') ||
+    hostname.endsWith('.ngrok.io')
+  );
+}
+
 function tunnelHeaders(headers: Headers): void {
   if (typeof window === 'undefined') return;
   const host = window.location.hostname;
-  if (host.includes('ngrok') || host.endsWith('.ngrok-free.dev')) {
-    // Free ngrok interstitials stall XHR/fetch unless this is set.
+  // Shared tunnels (ngrok, etc.): skip interstitial on API fetches too.
+  if (isSharedTunnelHost(host) || !isLocalDevHost(host)) {
     headers.set('ngrok-skip-browser-warning', '1');
+  }
+}
+
+function assertTunnelSafeApiUrl(url: string): void {
+  if (typeof window === 'undefined') return;
+  if (isLocalDevHost(window.location.hostname)) return;
+  if (!url.startsWith('http')) return;
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(url)) {
+    throw new ApiError(
+      'This build points API calls at your laptop (VITE_API_BASE_URL). Rebuild with empty base URL and use npm run share:frontend for ngrok.',
+      0,
+    );
   }
 }
 
 export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<Response> {
   const url = buildUrl(path);
+  assertTunnelSafeApiUrl(url);
   const headers = new Headers(options.headers);
   tunnelHeaders(headers);
 
@@ -48,7 +76,9 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   }
 
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 15000);
+  const timeoutMs =
+    typeof window !== 'undefined' && isSharedTunnelHost(window.location.hostname) ? 30000 : 15000;
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
   if (options.signal) {
     options.signal.addEventListener('abort', () => ac.abort(), { once: true });
   }
@@ -57,10 +87,18 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     const res = await fetch(url, { ...options, headers, signal: ac.signal });
     return res;
   } catch (err) {
+    if (err instanceof ApiError) throw err;
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new ApiError('Search timed out. On ngrok, hard-refresh after Visit Site, or use localhost.', 408);
+      throw new ApiError(
+        'Request timed out. On ngrok: Visit Site once, hard-refresh, mint JWT on Home, ensure Docker API is on :3000 and Vite preview on :5173.',
+        408,
+      );
     }
-    throw err;
+    const msg = err instanceof Error ? err.message : 'Network error';
+    throw new ApiError(
+      `${msg}. For ngrok: run npm run compare:dual-stack (or compose:baseline), npm run share:frontend, mint JWT on this URL (not localhost).`,
+      0,
+    );
   } finally {
     clearTimeout(timer);
   }

@@ -1,6 +1,6 @@
 /**
  * Short paired compare burst — same PT-005 mix, seconds not minutes.
- * Env: BASE_URL, K6_BEARER_TOKEN, RUN_ID, LOAD_RATE (default 12), LOAD_DURATION (default 8s).
+ * Env: BASE_URL, K6_BEARER_TOKEN, RUN_ID, LOAD_RATE (default 18), LOAD_DURATION (default 10s).
  */
 import http from 'k6/http';
 import { check } from 'k6';
