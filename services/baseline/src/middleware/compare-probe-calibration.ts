@@ -14,19 +14,30 @@ function bookDelayMs(): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-/** Dual-stack demo: baseline has no advisory cache; small delay mirrors k6 uncached read under contention. */
+/** Path after `/v1` mount (Express may still expose `/v1/search` on req.path). */
+export function compareProbeRouteKind(
+  path: string,
+  method: string,
+): 'read' | 'book' | null {
+  const p = path.startsWith('/v1/') ? path.slice(3) : path;
+  if (p.startsWith('/search') || p.startsWith('/availability')) return 'read';
+  if (method === 'POST' && p.startsWith('/bookings')) return 'book';
+  return null;
+}
+
+/** Dual-stack demo: baseline has no advisory cache; delay mirrors uncached primary-DB reads under Tatkal contention. */
 export function createCompareProbeCalibrationMiddleware(): RequestHandler {
   return async (req, _res, next) => {
     if (req.header(COMPARE_HEADER) !== '1') {
       next();
       return;
     }
-    const path = req.path;
+    const kind = compareProbeRouteKind(req.path, req.method);
     const readDelay = delayMs();
     const writeDelay = bookDelayMs();
-    if (readDelay > 0 && (path.startsWith('/search') || path.startsWith('/availability'))) {
+    if (kind === 'read' && readDelay > 0) {
       await new Promise((r) => setTimeout(r, readDelay));
-    } else if (writeDelay > 0 && path === '/bookings' && req.method === 'POST') {
+    } else if (kind === 'book' && writeDelay > 0) {
       await new Promise((r) => setTimeout(r, writeDelay));
     }
     next();

@@ -11,6 +11,7 @@ test('M8 #72 vite dev proxy forwards /v1 and /health', () => {
   assert.match(vite, /proxy/);
   assert.match(vite, /['"]\/v1['"]/);
   assert.match(vite, /['"]\/health['"]/);
+  assert.match(vite, /stripViteClientWhenHmrOff|railflux-strip-vite-client/);
 });
 
 test('M8 #72 env example uses same-origin dev base URL', () => {

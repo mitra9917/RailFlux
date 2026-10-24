@@ -85,6 +85,11 @@ export function MetricsComparePanel({ data }: Props) {
     >
       <p className="text-sm text-muted-foreground">{sideLine(data.baseline)}</p>
       <p className="mt-1 text-sm text-muted-foreground">{sideLine(data.optimized)}</p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Optimized wins on tail latency when Redis serves advisory reads; baseline compare overlay adds
+        primary-DB contention delay (no cache). Principal campaigns at calibrated load (PT-004+) are the
+        authoritative capacity story — this burst is a live lab snapshot.
+      </p>
 
       <MetricRow
         label="Terminal latency p99"

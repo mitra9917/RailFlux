@@ -11,8 +11,8 @@ import { signSyntheticJwt } from '@railflux/shared';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = path.join(ROOT, 'load-tests/k6/compare-burst.js');
 
-export const DEFAULT_DURATION_SEC = 8;
-export const DEFAULT_RATE = 12;
+export const DEFAULT_DURATION_SEC = 10;
+export const DEFAULT_RATE = 18;
 
 function metricBlock(metrics, name) {
   const raw = metrics?.[name];
@@ -106,6 +106,24 @@ function runK6({ baseUrl, token, duration, rate, runId, summaryPath }) {
   });
 }
 
+async function warmReadCache(baseUrl, token, runId) {
+  const secret = process.env.SYNTHETIC_JWT_SECRET || 'dev-only-change-me';
+  const jwt = token || (await signSyntheticJwt(secret, {
+    userId: '11111111-1111-4111-8111-111111111111',
+    cohort: 'k6-compare-warm',
+  }));
+  const headers = {
+    Authorization: `Bearer ${jwt}`,
+    'X-Railflux-Compare-Probe': '1',
+    'X-Run-Id': runId,
+  };
+  const av =
+    '/v1/availability?trainRunId=a5012c27-3b3a-4114-bea2-a33ec2bea8d7&class=3A&quota=TATKAL';
+  for (let i = 0; i < 24; i += 1) {
+    await fetch(`${baseUrl}${av}`, { headers });
+  }
+}
+
 async function mintToken() {
   const secret = process.env.SYNTHETIC_JWT_SECRET || 'dev-only-change-me';
   return signSyntheticJwt(secret, {
@@ -133,24 +151,23 @@ export async function runPairedK6Burst(options = {}) {
   try {
     const baselineSummary = path.join(dir, 'baseline.json');
     const optimizedSummary = path.join(dir, 'optimized.json');
-    await Promise.all([
-      runK6({
-        baseUrl: 'http://127.0.0.1:3000',
-        token,
-        duration,
-        rate,
-        runId: `${runId}-b`,
-        summaryPath: baselineSummary,
-      }),
-      runK6({
-        baseUrl: 'http://127.0.0.1:3001',
-        token,
-        duration,
-        rate,
-        runId: `${runId}-o`,
-        summaryPath: optimizedSummary,
-      }),
-    ]);
+    await warmReadCache('http://127.0.0.1:3001', token, `${runId}-warm`);
+    await runK6({
+      baseUrl: 'http://127.0.0.1:3000',
+      token,
+      duration,
+      rate,
+      runId: `${runId}-b`,
+      summaryPath: baselineSummary,
+    });
+    await runK6({
+      baseUrl: 'http://127.0.0.1:3001',
+      token,
+      duration,
+      rate,
+      runId: `${runId}-o`,
+      summaryPath: optimizedSummary,
+    });
 
     const [baselineRaw, optimizedRaw] = await Promise.all([
       readFile(baselineSummary, 'utf8').then((t) => JSON.parse(t)),

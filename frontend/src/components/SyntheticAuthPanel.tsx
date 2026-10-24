@@ -34,7 +34,7 @@ export function SyntheticAuthPanel({ onSessionChange, immersive, cardClassName }
         cohort: 'browser',
         token,
       };
-      setSession(next);
+      setSession((prev) => (prev?.token === next.token ? prev : next));
       onSessionChange(next);
     } else {
       setSession(null);

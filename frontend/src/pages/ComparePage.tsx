@@ -73,8 +73,9 @@ export function ComparePage() {
     >
       <AppCard title="Generate traffic">
         <p className="text-sm text-muted-foreground">
-          Runs <code className="font-mono text-xs">compare-burst.js</code> (PT-005 70/20/10) for 8s
-          at 12 req/s on each stack. Numbers below are from that run — not a static JSON file.
+          Runs <code className="font-mono text-xs">compare-burst.js</code> (PT-005 70/20/10) for 10s
+          at 18 req/s per stack (sequential, Redis warmed on optimized). Baseline compare overlay adds
+          primary-DB read delay — monolith has no advisory cache. Numbers are live k6 exports, not static JSON.
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">

@@ -19,6 +19,7 @@
     "build:worker": "npm run build -w @railflux/worker",
     "build:frontend": "npm run build:shared && npm run build -w @railflux/frontend",
     "dev:frontend": "npm run dev -w @railflux/frontend",
+    "share:frontend": "npm run build:shared && VITE_SYNTHETIC_JWT_SECRET=${VITE_SYNTHETIC_JWT_SECRET:-dev-only-change-me} npm run build -w @railflux/frontend && npm run preview -w @railflux/frontend -- --host --port 5173 --strictPort",
     "typecheck:frontend": "npm run typecheck -w @railflux/frontend",
     "typecheck:shared": "npm run typecheck -w @railflux/shared",
     "typecheck:baseline": "npm run typecheck -w @railflux/baseline",

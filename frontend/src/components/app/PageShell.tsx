@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -12,12 +11,7 @@ type Props = {
 
 export function PageShell({ eyebrow, title, lead, wide, children }: Props) {
   return (
-    <motion.div
-      initial={{ opacity: 1, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className={cn('flex flex-col gap-6', wide && 'page-wide max-w-none')}
-    >
+    <div className={cn('flex flex-col gap-6', wide && 'page-wide max-w-none')}>
       {title || eyebrow ? (
         <header className="space-y-2">
           {eyebrow ? (
@@ -32,6 +26,6 @@ export function PageShell({ eyebrow, title, lead, wide, children }: Props) {
         </header>
       ) : null}
       <div className="flex flex-col gap-5">{children}</div>
-    </motion.div>
+    </div>
   );
 }

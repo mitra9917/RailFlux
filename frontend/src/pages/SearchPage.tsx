@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ApiError } from '@/api/client';
+import { ApiError, fetchLiveHealth } from '@/api/client';
 import { searchTrains } from '@/api/search';
-import { loadStoredToken } from '@/auth/synthetic-auth';
+import { clearStoredToken, loadStoredToken } from '@/auth/synthetic-auth';
 import type { Freshness, TrainRun } from '@railflux/shared/api-types';
 import { AdvisoryBanner } from '@/components/AdvisoryBanner';
 import { FreshnessLabel } from '@/components/FreshnessLabel';
@@ -28,7 +28,16 @@ export function SearchPage() {
     if (!loadStoredToken()) {
       setLoading(false);
       setItems([]);
-      setError('Sign in on Home (Mint dev JWT) before search.');
+      setError('Sign in on this site (Mint dev JWT). ngrok uses a separate session from localhost.');
+      return;
+    }
+    const health = await fetchLiveHealth();
+    if (!health.ok) {
+      setLoading(false);
+      setItems([]);
+      setError(
+        'Backend not reachable via /health. Start Docker API (npm run compare:dual-stack or compose:baseline) and npm run share:frontend on :5173.',
+      );
       return;
     }
     const gen = ++searchGen.current;
@@ -51,7 +60,12 @@ export function SearchPage() {
       if (searchGen.current !== gen) return;
       setItems([]);
       if (err instanceof ApiError) {
-        setError(err.status === 401 ? 'Sign in on Home (Mint dev JWT) before search.' : err.message);
+        if (err.status === 401) {
+          clearStoredToken();
+          setError('Sign in on this site (Mint dev JWT). ngrok uses a separate session from localhost.');
+        } else {
+          setError(err.message);
+        }
       } else {
         setError(err instanceof Error ? err.message : 'Search failed');
       }
@@ -63,6 +77,12 @@ export function SearchPage() {
   const queryKey = searchParams.toString();
 
   useEffect(() => {
+    if (!searchParams.get('date')) {
+      const next = new URLSearchParams(searchParams);
+      next.set('date', '2026-04-01');
+      setSearchParams(next, { replace: true });
+      return;
+    }
     const qFrom = (searchParams.get('from') || '').toUpperCase();
     const qTo = (searchParams.get('to') || '').toUpperCase();
     const qDate = searchParams.get('date') || '2026-04-01';
@@ -71,7 +91,7 @@ export function SearchPage() {
     setDate(qDate);
     void runSearch(qFrom, qTo, qDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey, runSearch]);
+  }, [queryKey, runSearch, setSearchParams]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -131,11 +151,13 @@ export function SearchPage() {
       ) : null}
 
       <div className="min-h-48">
-        {loading ? <p className="py-10 text-sm text-muted-foreground">Loading trains…</p> : null}
-        {!loading && items.length > 0 ? (
+        {loading && items.length === 0 ? (
+          <p className="py-10 text-sm text-muted-foreground">Loading trains…</p>
+        ) : null}
+        {items.length > 0 ? (
           <ul className="divide-y divide-border">
             {items.map((run) => (
-              <li key={run.trainRunId}>
+              <li key={run.trainRunId} className="[content-visibility:auto] [contain-intrinsic-size:4.5rem]">
                 <Link
                   to={`/availability?trainRunId=${encodeURIComponent(run.trainRunId)}&trainNo=${encodeURIComponent(run.trainNo)}&name=${encodeURIComponent(run.name)}&from=${encodeURIComponent(run.from)}&to=${encodeURIComponent(run.to)}&date=${encodeURIComponent(run.date)}`}
                   className="flex items-center justify-between gap-6 py-6 no-underline"

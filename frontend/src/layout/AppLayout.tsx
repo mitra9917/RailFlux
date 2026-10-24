@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const nav: { to: string; label: string; end?: boolean }[] = [
   { to: '/', label: 'Home', end: true },
-  { to: '/search', label: 'Search' },
+  { to: '/search?date=2026-04-01', label: 'Search' },
   { to: '/experiments', label: 'Experiments' },
   { to: '/architecture', label: 'Architecture' },
   { to: '/about', label: 'About' },
